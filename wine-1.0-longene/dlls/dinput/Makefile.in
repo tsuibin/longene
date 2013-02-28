@@ -1,0 +1,26 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = dinput.dll
+IMPORTLIB = dinput
+IMPORTS   = dxguid uuid ole32 user32 advapi32 kernel32
+
+C_SRCS = \
+	data_formats.c \
+	device.c \
+	dinput_main.c \
+	effect_linuxinput.c \
+	joystick_linux.c \
+	joystick_linuxinput.c \
+	keyboard.c \
+	mouse.c \
+	regsvr.c
+
+IMPLIB_SRCS = data_formats.c
+
+RC_SRCS = version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

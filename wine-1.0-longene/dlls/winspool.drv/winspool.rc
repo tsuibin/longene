@@ -1,0 +1,58 @@
+/*
+ * Top level resource file for winspool
+ *
+ * Copyright 2005  Huw Davies
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+ */
+
+#include "windef.h"
+#include "winbase.h"
+#include "winuser.h"
+#include "wspool.h"
+#include "winver.h"
+
+#define WINE_FILENAME_STR "winspool.drv"
+#define WINE_FILEDESCRIPTION_STR "Wine core printer driver"
+
+#define WINE_FILETYPE     VFT_DRV
+#define WINE_FILESUBTYPE  VFT2_DRV_PRINTER
+
+/* Same Version as WinXP_sp2 */
+#define WINE_FILEVERSION      5,1,2600,2180
+#define WINE_FILEVERSION_STR "5.1.2600.2180"
+
+#define WINE_PRODUCTVERSION      5,1,2600,2180
+#define WINE_PRODUCTVERSION_STR "5.1.2600.2180"
+
+#include "wine/wine_common_ver.rc"
+
+#include "Bg.rc"
+#include "Da.rc"
+#include "De.rc"
+#include "En.rc"
+#include "Eo.rc"
+#include "Es.rc"
+#include "Fi.rc"
+#include "Fr.rc"
+#include "It.rc"
+#include "Ko.rc"
+#include "Nl.rc"
+#include "No.rc"
+#include "Pl.rc"
+#include "Ru.rc"
+#include "Si.rc"
+#include "Sv.rc"
+#include "Tr.rc"

@@ -1,0 +1,254 @@
+/* Hey, Emacs, open this file with -*- coding: cp1250 -*-
+ *
+ * Regedit Czech resources
+ *
+ * Copyright 2002 Robert Dickenson
+ * Copyright 2004 David Kredba
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+ */
+
+LANGUAGE LANG_CZECH, SUBLANG_DEFAULT
+
+/* Czech strings in CP1250 */
+
+/*
+ * Menu
+ */
+
+
+IDR_REGEDIT_MENU MENU DISCARDABLE
+BEGIN
+    POPUP "&Registr"
+    BEGIN
+        MENUITEM "&Importovat soubor registru...",    ID_REGISTRY_IMPORTREGISTRYFILE
+        MENUITEM "&Exportovat soubor registru...",    ID_REGISTRY_EXPORTREGISTRYFILE
+        MENUITEM SEPARATOR
+        MENUITEM "&P¯ipojit registr v sÌti...", ID_REGISTRY_CONNECTNETWORKREGISTRY, GRAYED
+        MENUITEM "O&dpojit sÌùov˝ registr...", ID_REGISTRY_DISCONNECTNETWORKREGISTRY, GRAYED
+        MENUITEM SEPARATOR
+        MENUITEM "&Tisk\tCtrl+P",              ID_REGISTRY_PRINT, GRAYED
+        MENUITEM SEPARATOR
+        MENUITEM "&Konec",                       ID_REGISTRY_EXIT
+    END
+    POPUP "&⁄pravy"
+    BEGIN
+        MENUITEM "Z&mÏnit",                     ID_EDIT_MODIFY
+        MENUITEM SEPARATOR
+        POPUP "&Nov˝"
+        BEGIN
+            MENUITEM "&KlÌË",                        ID_EDIT_NEW_KEY
+            MENUITEM SEPARATOR
+            MENUITEM "ÿ&etÏzcov· poloûka",               ID_EDIT_NEW_STRINGVALUE
+            MENUITEM "&Bin·rnÌ poloûka",               ID_EDIT_NEW_BINARYVALUE
+            MENUITEM "&DWORD poloûka",                ID_EDIT_NEW_DWORDVALUE
+            MENUITEM "&Multi String Value",     ID_EDIT_NEW_MULTI_STRINGVALUE
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "&Smazat\tDel",                ID_EDIT_DELETE
+        MENUITEM "P¯e&jmenovat\tF2",                 ID_EDIT_RENAME
+        MENUITEM SEPARATOR
+        MENUITEM "&KopÌrovat n·zev klÌËe",              ID_EDIT_COPYKEYNAME
+        MENUITEM SEPARATOR
+        MENUITEM "&NajÌt\tCtrl+F",               ID_EDIT_FIND, GRAYED
+        MENUITEM "NajÌt &dalöÌ\tF3",              ID_EDIT_FINDNEXT, GRAYED
+    END
+    POPUP "&Zobrazit"
+    BEGIN
+        MENUITEM "P&anel Status",                 ID_VIEW_STATUSBAR
+        MENUITEM SEPARATOR
+        MENUITEM "RozdÏ&lit",                      ID_VIEW_SPLIT
+        MENUITEM SEPARATOR
+        MENUITEM "P¯ek&reslit\tF5",                ID_VIEW_REFRESH
+    END
+    POPUP "&OblÌbenÈ"
+    BEGIN
+        MENUITEM "P¯id&at k oblÌben˝m...",          ID_FAVORITES_ADDTOFAVORITES
+        MENUITEM "Odeb&rat oblÌbenÈ...",           ID_FAVORITES_REMOVEFAVORITE
+    END
+    POPUP "&N·povÏda"
+    BEGIN
+        MENUITEM "Obsa&h\tF1",            ID_HELP_HELPTOPICS
+        MENUITEM SEPARATOR
+        MENUITEM "&O aplikaci Registry Editor",      ID_HELP_ABOUT
+    END
+END
+
+IDR_POPUP_MENUS MENU DISCARDABLE
+BEGIN
+  POPUP ""
+  BEGIN
+	MENUITEM "&Upravit",                     ID_EDIT_MODIFY
+	MENUITEM "Upravit bin·rnÌ data",          ID_EDIT_MODIFY_BIN
+	MENUITEM SEPARATOR
+	MENUITEM "&Smazat\tDel",                ID_EDIT_DELETE
+	MENUITEM "&P¯ejmenovat",                     ID_EDIT_RENAME
+  END
+  POPUP ""
+  BEGIN
+        POPUP "&Nov˝"
+        BEGIN
+            MENUITEM "&KlÌË",                        ID_EDIT_NEW_KEY
+            MENUITEM SEPARATOR
+            MENUITEM "ÿ&etÏzcov· poloûka",               ID_EDIT_NEW_STRINGVALUE
+            MENUITEM "&BinarnÌ poloûka",               ID_EDIT_NEW_BINARYVALUE
+            MENUITEM "&DWORD poloûka",                ID_EDIT_NEW_DWORDVALUE
+            MENUITEM "&Multi String Value",     ID_EDIT_NEW_MULTI_STRINGVALUE
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "&Smazat\tDel",                ID_EDIT_DELETE
+        MENUITEM "P¯e&jmenovat\tF2",                 ID_EDIT_RENAME
+        MENUITEM SEPARATOR
+        MENUITEM "&Export...",                  ID_EDIT_EXPORT
+        MENUITEM "&KopÌrovat n·zev klÌËe",              ID_EDIT_COPYKEYNAME
+        MENUITEM SEPARATOR
+        MENUITEM "&NajÌt\tCtrl+F",               ID_EDIT_FIND, GRAYED
+  END
+END
+
+
+/*
+ * Dialog
+ */
+
+IDD_EDIT_STRING DIALOG DISCARDABLE  22, 17, 210, 75
+STYLE DS_MODALFRAME | WS_CAPTION | WS_SYSMENU
+CAPTION "⁄prava ¯etÏzce"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT           "N·zev:",IDC_STATIC,5,5,119,8
+    EDITTEXT        IDC_VALUE_NAME,5,15,200,12, WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL | WS_DISABLED
+    LTEXT           "Obsah:",IDC_STATIC,5,30,119,8
+    EDITTEXT        IDC_VALUE_DATA,5,40,200,12, WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,140,60,30,11,WS_GROUP
+    PUSHBUTTON   "Storno",IDCANCEL,175,60,30,11,WS_GROUP
+END
+
+IDD_EDIT_DWORD DIALOG DISCARDABLE  22, 17, 210, 100
+STYLE DS_MODALFRAME | DS_NOIDLEMSG | WS_CAPTION | WS_SYSMENU
+CAPTION "⁄prava DWORD"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT           "N·zev:",IDC_STATIC,5,5,119,8
+    EDITTEXT        IDC_VALUE_NAME,5,15,200,12, WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL | WS_DISABLED
+    LTEXT           "Obsah:",IDC_STATIC,5,30,90,8
+    EDITTEXT        IDC_VALUE_DATA,5,40,90,12, WS_BORDER | WS_TABSTOP
+    GROUPBOX        "Z·klad", IDC_DWORD_BASE, 120, 30, 85, 37, BS_GROUPBOX
+    AUTORADIOBUTTON "öestn·ctkov˝", IDC_DWORD_HEX, 130, 40, 60, 10, WS_TABSTOP
+    AUTORADIOBUTTON "Desitkov˝", IDC_DWORD_DEC, 130, 52, 60, 10, WS_TABSTOP
+    DEFPUSHBUTTON   "OK",IDOK,140,80,30,11,WS_GROUP
+    PUSHBUTTON   "Storno",IDCANCEL,175,80,30,11,WS_GROUP
+END
+
+/*
+ * String Table
+ */
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_LIST_COLUMN_NAME    "N·zev"
+    IDS_LIST_COLUMN_TYPE    "Typ"
+    IDS_LIST_COLUMN_DATA    "Obsah"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_APP_TITLE           "Editor registru"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    ID_REGISTRY_MENU        "Obsahuje p¯Ìkazy pro pr·ci se syrov˝m registrem"
+    ID_EDIT_MENU            "Obsahuje p¯Ìkazy pro editaci klÌË˘ a poloûek"
+    ID_VIEW_MENU            "Obsahuje p¯Ìkazy pro ˙pravu vzhledu okna regeditu"
+    ID_FAVORITES_MENU       "Obsahuje p¯Ìkazy pro p¯Ìstup k Ëasto uûÌvan˝m klÌË˘m"
+    ID_HELP_MENU            "Obsahuje p¯Ìkazy pro zobrazenÌ n·povÏdy a informacÌo editoru registru"
+    ID_EDIT_NEW_MENU        "Obsahuje p¯Ìkazy pro vytv·¯enÌ nov˝ch klÌË˘ a poloûek"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    ID_EDIT_MODIFY          "ZmÏnÌ data"
+    ID_EDIT_NEW_KEY         "P¯id· nov˝ klÌË"
+    ID_EDIT_NEW_STRINGVALUE "P¯id· novou ¯etÏzcovou poloûku"
+    ID_EDIT_NEW_BINARYVALUE "P¯id· novou bin·rnÌ poloûku"
+    ID_EDIT_NEW_DWORDVALUE  "P¯id· novou DWORD poloûku"
+    ID_REGISTRY_IMPORTREGISTRYFILE "Importuje textov˝ soubor registru"
+    ID_REGISTRY_EXPORTREGISTRYFILE
+                            "Exportuje cel˝ registr nebo jeho Ë·st do textovÈho souboru"
+    ID_REGISTRY_CONNECTNETWORKREGISTRY
+                            "P¯ipojÌ se k registru na jinÈm poËÌtaËi"
+    ID_REGISTRY_DISCONNECTNETWORKREGISTRY
+                            "OdpojÌ se od vzd·lenÏ p¯ipojenÈho registru"
+    ID_REGISTRY_PRINT       "Vytiskne Ë·st nebo cel˝ registr"
+/*    ID_HELP_HELPTOPICS      "Opens registry editor help" */
+    ID_HELP_ABOUT           "ZobrazÌ informace o programu, jeho verzi a copyright"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    ID_REGISTRY_EXIT        "UkonËÌ regedit"
+    ID_FAVORITES_ADDTOFAVORITES "P¯id· klÌË k oblÌben˝m"
+    ID_FAVORITES_REMOVEFAVORITE "Odebere klÌË z oblÌben˝ch"
+    ID_VIEW_STATUSBAR       "Uk·ûe nebo skryje status bar"
+    ID_VIEW_SPLIT           "Change position of split between two panes"
+    ID_VIEW_REFRESH         "P¯ekreslÌ okno"
+    ID_EDIT_DELETE          "Smaûe vybranÈ"
+    ID_EDIT_RENAME          "P¯ejmenuje vybranÈ"
+    ID_EDIT_COPYKEYNAME     "VloûÌ n·zev vybranÈho klÌËe do schr·nky"
+    ID_EDIT_FIND            "Najde textov˝ ¯etÏzec v klÌËi, poloûce nebo datech"
+    ID_EDIT_FINDNEXT        "Najde dalöÌ v˝skyt textu"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_ERROR		    "Chyba"
+    IDS_BAD_KEY		    "Nelze najÌt klÌË '%s'"
+    IDS_BAD_VALUE           "Nelze najÌt poloûku '%s'"
+    IDS_UNSUPPORTED_TYPE    "Nemohu upravit klÌËe tohoto typu (%ld)"
+    IDS_TOO_BIG_VALUE       "Hodnota je p¯Ìliö velk· (%ld)"
+    IDS_DELETE_BOX_TITLE    "PotvrÔte smaz·nÌ poloûky"
+    IDS_DELETE_BOX_TEXT     "Opravdu chcete smazat poloûku '%s'?"
+    IDS_NEWKEY              "Nov˝ klÌË #%d"
+    IDS_NEWVALUE            "Nov· poloûka #%d"
+    IDS_NOTFOUND            "Search string '%s' not found"
+END
+
+/*****************************************************************/
+
+/*
+ * TEXTINCLUDE
+ */
+
+1 TEXTINCLUDE DISCARDABLE
+BEGIN
+    "resource.h\0"
+END
+
+
+
+/*
+ * String Table
+ */
+
+/*
+ *STRINGTABLE DISCARDABLE
+ *BEGIN
+ *    ID_HELP_HELPTOPICS      "Opens Registry Editor Help."
+ *    ID_HELP_ABOUT           "Displays program information, version number, and copyright."
+ *END
+ */
+
+/*****************************************************************/

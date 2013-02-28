@@ -1,0 +1,14 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = comdlg32.dll
+IMPORTS   = comdlg32 user32 kernel32
+
+CTESTS = \
+	filedlg.c \
+	printdlg.c
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

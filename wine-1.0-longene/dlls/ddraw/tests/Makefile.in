@@ -1,0 +1,17 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = ddraw.dll
+IMPORTS   = dxguid ddraw user32 gdi32 kernel32
+
+CTESTS = \
+	d3d.c \
+	ddrawmodes.c \
+	dsurface.c \
+	refcount.c \
+	visual.c
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

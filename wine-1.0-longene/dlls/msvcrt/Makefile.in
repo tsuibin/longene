@@ -1,0 +1,43 @@
+EXTRADEFS = -D_MT
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = msvcrt.dll
+IMPORTLIB = msvcrt
+IMPORTS   = kernel32 ntdll
+DELAYIMPORTS = user32
+
+C_SRCS = \
+	console.c \
+	cpp.c \
+	cppexcept.c \
+	ctype.c \
+	data.c \
+	dir.c \
+	environ.c \
+	errno.c \
+	except.c \
+	exit.c \
+	file.c \
+	heap.c \
+	locale.c \
+	lock.c \
+	main.c \
+	math.c \
+	mbcs.c \
+	misc.c \
+	process.c \
+	scanf.c \
+	string.c \
+	thread.c \
+	time.c \
+	undname.c \
+	wcs.c
+
+RC_SRCS = \
+	rsrc.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

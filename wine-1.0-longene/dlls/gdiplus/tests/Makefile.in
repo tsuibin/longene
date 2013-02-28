@@ -1,0 +1,20 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = gdiplus.dll
+IMPORTS   = gdiplus user32 gdi32 kernel32
+
+CTESTS = \
+	brush.c \
+	font.c \
+	graphics.c \
+	graphicspath.c \
+	image.c \
+	matrix.c \
+	pen.c \
+	stringformat.c
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

@@ -1,0 +1,2370 @@
+diff -urN linux-2.6.34/arch/x86/include/asm/irq_vectors.h linux-2.6.34-longene/arch/x86/include/asm/irq_vectors.h
+--- linux-2.6.34/arch/x86/include/asm/irq_vectors.h	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/arch/x86/include/asm/irq_vectors.h	2010-09-06 10:29:59.481862287 +0800
+@@ -27,11 +27,24 @@
+ #define NMI_VECTOR			0x02
+ #define MCE_VECTOR			0x12
+ 
++#ifndef CONFIG_UNIFIED_KERNEL
+ /*
+  * IDT vectors usable for external interrupt sources start at 0x20.
+  * (0x80 is the syscall vector, 0x30-0x3f are for ISA)
+  */
+ #define FIRST_EXTERNAL_VECTOR		0x20
++#else
++/*
++ * IDT vectors usable for external interrupt sources start
++ * at 0x30, as 0x20-0x2f are used by Win32 system call implementation:
++ */
++#define FIRST_EXTERNAL_VECTOR		0x30
++/*
++ * For Unified Kernel, 16 more IRQ's are reserved for win32 system
++ * call implementation, and thus the number of potential APIC 
++ * interrupt sources is reduced by 16. 
++ */
++#endif
+ /*
+  * We start allocating at 0x21 to spread out vectors evenly between
+  * priority levels. (0x80 is the syscall vector)
+@@ -157,16 +170,30 @@
+ #ifdef CONFIG_X86_IO_APIC
+ # ifdef CONFIG_SPARSE_IRQ
+ #  define CPU_VECTOR_LIMIT		(64 * NR_CPUS)
++#  ifndef CONFIG_UNIFIED_KERNEL
+ #  define NR_IRQS					\
+ 	(CPU_VECTOR_LIMIT > IO_APIC_VECTOR_LIMIT ?	\
+ 		(NR_VECTORS + CPU_VECTOR_LIMIT)  :	\
+ 		(NR_VECTORS + IO_APIC_VECTOR_LIMIT))
++#  else
++#  define NR_IRQS					\
++	(CPU_VECTOR_LIMIT > IO_APIC_VECTOR_LIMIT ?	\
++		(NR_VECTORS + CPU_VECTOR_LIMIT - 16)  :	\
++		(NR_VECTORS + IO_APIC_VECTOR_LIMIT - 16))
++#  endif
+ # else
+ #  define CPU_VECTOR_LIMIT		(32 * NR_CPUS)
++#  ifndef CONFIG_UNIFIED_KERNEL
+ #  define NR_IRQS					\
+ 	(CPU_VECTOR_LIMIT < IO_APIC_VECTOR_LIMIT ?	\
+ 		(NR_VECTORS + CPU_VECTOR_LIMIT)  :	\
+ 		(NR_VECTORS + IO_APIC_VECTOR_LIMIT))
++#  else
++#  define NR_IRQS					\
++	(CPU_VECTOR_LIMIT < IO_APIC_VECTOR_LIMIT ?	\
++		(NR_VECTORS + CPU_VECTOR_LIMIT - 16)  :	\
++		(NR_VECTORS + IO_APIC_VECTOR_LIMIT - 16))
++#  endif
+ # endif
+ #else /* !CONFIG_X86_IO_APIC: */
+ # define NR_IRQS			NR_IRQS_LEGACY
+diff -urN linux-2.6.34/arch/x86/include/asm/thread_info.h linux-2.6.34-longene/arch/x86/include/asm/thread_info.h
+--- linux-2.6.34/arch/x86/include/asm/thread_info.h	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/arch/x86/include/asm/thread_info.h	2010-09-06 10:29:59.193861320 +0800
+@@ -120,6 +120,11 @@
+ #define _TIF_LAZY_MMU_UPDATES	(1 << TIF_LAZY_MMU_UPDATES)
+ #define _TIF_SYSCALL_TRACEPOINT	(1 << TIF_SYSCALL_TRACEPOINT)
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++#define TIF_APC                 13
++#define _TIF_APC                (1<<TIF_APC)
++#endif
++
+ /* work to do in syscall_trace_enter() */
+ #define _TIF_WORK_SYSCALL_ENTRY	\
+ 	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_EMU | _TIF_SYSCALL_AUDIT |	\
+diff -urN linux-2.6.34/arch/x86/kernel/hw_breakpoint.c linux-2.6.34-longene/arch/x86/kernel/hw_breakpoint.c
+--- linux-2.6.34/arch/x86/kernel/hw_breakpoint.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/arch/x86/kernel/hw_breakpoint.c	2010-09-06 10:30:03.741861365 +0800
+@@ -411,6 +411,9 @@
+ 		t->ptrace_bps[i] = NULL;
+ 	}
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(flush_ptrace_hw_breakpoint);
++#endif
+ 
+ void hw_breakpoint_restore(void)
+ {
+diff -urN linux-2.6.34/arch/x86/kernel/ldt.c linux-2.6.34-longene/arch/x86/kernel/ldt.c
+--- linux-2.6.34/arch/x86/kernel/ldt.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/arch/x86/kernel/ldt.c	2010-09-06 10:30:06.057861242 +0800
+@@ -119,6 +119,24 @@
+ 	return retval;
+ }
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++int init_new_context_from_task(struct task_struct *ptsk, struct task_struct *tsk, struct mm_struct *mm)
++{
++	struct mm_struct * old_mm;
++	int retval = 0;
++
++	mutex_init(&mm->context.lock);
++	mm->context.size = 0;
++	old_mm = ptsk->mm;
++	if (old_mm && old_mm->context.size > 0) {
++		mutex_lock(&old_mm->context.lock);
++		retval = copy_ldt(&mm->context, &old_mm->context);
++		mutex_unlock(&old_mm->context.lock);
++	}
++	return retval;
++}
++#endif
++
+ /*
+  * No need to lock the MM as we are the last user
+  *
+diff -urN linux-2.6.34/arch/x86/kernel/process.c linux-2.6.34-longene/arch/x86/kernel/process.c
+--- linux-2.6.34/arch/x86/kernel/process.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/arch/x86/kernel/process.c	2010-09-06 10:30:04.624492726 +0800
+@@ -92,6 +92,31 @@
+ 	}
+ }
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++/*
++ * Free thread data structures etc..
++ */
++void exit_thread_for_task(struct task_struct *tsk)
++{
++	struct thread_struct *t = &tsk->thread;
++	unsigned long *bp = t->io_bitmap_ptr;
++
++	if (bp) {
++		struct tss_struct *tss = &per_cpu(init_tss, get_cpu());
++
++		t->io_bitmap_ptr = NULL;
++		clear_thread_flag(TIF_IO_BITMAP);
++		/*
++		 * Careful, clear this in the TSS too:
++		 */
++		memset(tss->io_bitmap, 0xff, t->io_bitmap_max);
++		t->io_bitmap_max = 0;
++		put_cpu();
++		kfree(bp);
++	}
++}
++#endif
++
+ void show_regs(struct pt_regs *regs)
+ {
+ 	show_registers(regs);
+@@ -696,6 +721,9 @@
+ 		sp -= get_random_int() % 8192;
+ 	return sp & ~0xf;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(arch_align_stack);
++#endif
+ 
+ unsigned long arch_randomize_brk(struct mm_struct *mm)
+ {
+diff -urN linux-2.6.34/arch/x86/kernel/ptrace.c linux-2.6.34-longene/arch/x86/kernel/ptrace.c
+--- linux-2.6.34/arch/x86/kernel/ptrace.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/arch/x86/kernel/ptrace.c	2010-09-06 10:30:03.493861299 +0800
+@@ -44,6 +44,10 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/syscalls.h>
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++#include <linux/module.h>
++#endif
++
+ enum x86_regset {
+ 	REGSET_GENERAL,
+ 	REGSET_FP,
+@@ -604,7 +608,11 @@
+ /*
+  * Handle ptrace writes to debug register 7.
+  */
++#ifdef CONFIG_UNIFIED_KERNEL
++int ptrace_write_dr7(struct task_struct *tsk, unsigned long data)
++#else
+ static int ptrace_write_dr7(struct task_struct *tsk, unsigned long data)
++#endif
+ {
+ 	struct thread_struct *thread = &(tsk->thread);
+ 	unsigned long old_dr7;
+@@ -662,6 +670,9 @@
+ 	}
+ 	return ((orig_ret < 0) ? orig_ret : rc);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(ptrace_write_dr7);
++#endif
+ 
+ /*
+  * Handle PTRACE_PEEKUSR calls for the debug register area.
+@@ -685,8 +696,13 @@
+ 	return val;
+ }
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++int ptrace_set_breakpoint_addr(struct task_struct *tsk, int nr,
++				      unsigned long addr)
++#else
+ static int ptrace_set_breakpoint_addr(struct task_struct *tsk, int nr,
+ 				      unsigned long addr)
++#endif
+ {
+ 	struct perf_event *bp;
+ 	struct thread_struct *t = &tsk->thread;
+@@ -733,6 +749,9 @@
+ 
+ 	return 0;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(ptrace_set_breakpoint_addr);
++#endif
+ 
+ /*
+  * Handle PTRACE_POKEUSR calls for the debug register area.
+@@ -1774,6 +1793,9 @@
+ 
+ 	return ret ?: regs->orig_ax;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(syscall_trace_enter);
++#endif
+ 
+ asmregparm void syscall_trace_leave(struct pt_regs *regs)
+ {
+@@ -1796,3 +1818,6 @@
+ 	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
+ 		tracehook_report_syscall_exit(regs, step);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(syscall_trace_leave);
++#endif
+diff -urN linux-2.6.34/arch/x86/kernel/signal.c linux-2.6.34-longene/arch/x86/kernel/signal.c
+--- linux-2.6.34/arch/x86/kernel/signal.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/arch/x86/kernel/signal.c	2010-09-06 10:30:02.797861317 +0800
+@@ -37,6 +37,10 @@
+ 
+ #include <asm/sigframe.h>
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++#include <linux/module.h>
++#endif
++
+ #define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
+ 
+ #define __FIX_EFLAGS	(X86_EFLAGS_AC | X86_EFLAGS_OF | \
+@@ -861,6 +865,9 @@
+ 	clear_thread_flag(TIF_IRET);
+ #endif /* CONFIG_X86_32 */
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(do_notify_resume);
++#endif
+ 
+ void signal_fault(struct pt_regs *regs, void __user *frame, char *where)
+ {
+diff -urN linux-2.6.34/arch/x86/kernel/traps.c linux-2.6.34-longene/arch/x86/kernel/traps.c
+--- linux-2.6.34/arch/x86/kernel/traps.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/arch/x86/kernel/traps.c	2010-09-06 10:30:02.873861314 +0800
+@@ -879,6 +879,46 @@
+ }
+ #endif
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++int set_w32system_gate(unsigned int n, void *addr)
++{
++	/* 0x20 ~ 0x2f could be set */
++	if ((n & 0xfffffff0) != 0x20)
++		return -1;
++	_set_gate(n, GATE_TRAP, addr, 0x3, 0, __KERNEL_CS);
++	return 0;
++}
++EXPORT_SYMBOL(set_w32system_gate);
++
++int backup_idt_entry(unsigned int n, unsigned long *a, unsigned long *b)
++{
++	unsigned long	*gate_addr;
++
++	/* 0x20 ~ 0x2f could be backup */
++	if ((n & 0xfffffff0) != 0x20)
++		return -1;
++	gate_addr = (unsigned long *)(idt_table + n);
++	*a = *gate_addr;
++	*b = *(gate_addr + 1);
++	return 0;
++}
++EXPORT_SYMBOL(backup_idt_entry);
++
++int restore_idt_entry(unsigned int n, unsigned long a, unsigned long b)
++{
++	unsigned long	*gate_addr;
++
++	/* 0x20 ~ 0x2f could be restore */
++	if ((n & 0xfffffff0) != 0x20)
++		return -1;
++	gate_addr = (unsigned long *)(idt_table + n);
++	*gate_addr = a;
++	*(gate_addr + 1) = b;
++	return 0;
++}
++EXPORT_SYMBOL(restore_idt_entry);
++#endif
++
+ void __init trap_init(void)
+ {
+ 	int i;
+diff -urN linux-2.6.34/arch/x86/kernel/vm86_32.c linux-2.6.34-longene/arch/x86/kernel/vm86_32.c
+--- linux-2.6.34/arch/x86/kernel/vm86_32.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/arch/x86/kernel/vm86_32.c	2010-09-06 10:30:03.342826911 +0800
+@@ -48,6 +48,10 @@
+ #include <asm/irq.h>
+ #include <asm/syscalls.h>
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++#include <linux/module.h>
++#endif
++
+ /*
+  * Known problems:
+  *
+@@ -162,6 +166,9 @@
+ 
+ 	return ret;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(save_v86_state);
++#endif
+ 
+ static void mark_screen_rdonly(struct mm_struct *mm)
+ {
+diff -urN linux-2.6.34/arch/x86/mm/mmap.c linux-2.6.34-longene/arch/x86/mm/mmap.c
+--- linux-2.6.34/arch/x86/mm/mmap.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/arch/x86/mm/mmap.c	2010-09-06 10:30:00.449862062 +0800
+@@ -30,6 +30,9 @@
+ #include <linux/limits.h>
+ #include <linux/sched.h>
+ #include <asm/elf.h>
++#ifdef CONFIG_UNIFIED_KERNEL
++#include <linux/module.h>
++#endif
+ 
+ static unsigned int stack_maxrandom_size(void)
+ {
+@@ -134,3 +137,6 @@
+ 		mm->unmap_area = arch_unmap_area_topdown;
+ 	}
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(arch_pick_mmap_layout);
++#endif
+diff -urN linux-2.6.34/arch/x86/vdso/vdso32-setup.c linux-2.6.34-longene/arch/x86/vdso/vdso32-setup.c
+--- linux-2.6.34/arch/x86/vdso/vdso32-setup.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/arch/x86/vdso/vdso32-setup.c	2010-09-06 10:29:58.981861251 +0800
+@@ -371,6 +371,9 @@
+ 
+ 	return ret;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(arch_setup_additional_pages);
++#endif
+ 
+ #ifdef CONFIG_X86_64
+ 
+diff -urN linux-2.6.34/fs/dcache.c linux-2.6.34-longene/fs/dcache.c
+--- linux-2.6.34/fs/dcache.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/fs/dcache.c	2010-09-06 10:30:28.802040867 +0800
+@@ -2147,6 +2147,9 @@
+ 	free_page((unsigned long) page);
+ 	return error;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_getcwd);
++#endif
+ 
+ /*
+  * Test whether new_dentry is a subdirectory of old_dentry.
+diff -urN linux-2.6.34/fs/eventpoll.c linux-2.6.34-longene/fs/eventpoll.c
+--- linux-2.6.34/fs/eventpoll.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/fs/eventpoll.c	2010-09-06 10:30:33.941861294 +0800
+@@ -1073,11 +1073,23 @@
+ 		 * can change the item.
+ 		 */
+ 		if (revents) {
++#ifdef CONFIG_UNIFIED_KERNEL
++			if ((unsigned long)uevent >= 0xC0000000) {
++				uevent->events = revents;
++				uevent->data = epi->event.data;
++			}
++			else if (__put_user(revents, &uevent->events) ||
++			    	 __put_user(epi->event.data, &uevent->data)) {
++				list_add(&epi->rdllink, head);
++				return eventcnt ? eventcnt : -EFAULT;
++			}
++#else
+ 			if (__put_user(revents, &uevent->events) ||
+ 			    __put_user(epi->event.data, &uevent->data)) {
+ 				list_add(&epi->rdllink, head);
+ 				return eventcnt ? eventcnt : -EFAULT;
+ 			}
++#endif
+ 			eventcnt++;
+ 			uevent++;
+ 			if (epi->event.events & EPOLLONESHOT)
+@@ -1220,6 +1232,9 @@
+ 
+ 	return sys_epoll_create1(0);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_epoll_create);
++#endif
+ 
+ /*
+  * The following function implements the controller interface for
+@@ -1236,9 +1251,17 @@
+ 	struct epoll_event epds;
+ 
+ 	error = -EFAULT;
++#ifdef CONFIG_UNIFIED_KERNEL
++	if ((unsigned long)event >= 0xC0000000) {
++		memcpy(&epds, event, sizeof(struct epoll_event));
++	}
++	else if (copy_from_user(&epds, event, sizeof(struct epoll_event)))
++		goto error_return;
++#else
+ 	if (ep_op_has_event(op) &&
+ 	    copy_from_user(&epds, event, sizeof(struct epoll_event)))
+ 		goto error_return;
++#endif
+ 
+ 	/* Get the "struct file *" for the eventpoll file */
+ 	error = -EBADF;
+@@ -1313,6 +1336,9 @@
+ 
+ 	return error;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_epoll_ctl);
++#endif
+ 
+ /*
+  * Implement the event wait interface for the eventpoll file. It is the kernel
+@@ -1329,11 +1355,57 @@
+ 	if (maxevents <= 0 || maxevents > EP_MAX_EVENTS)
+ 		return -EINVAL;
+ 
++#ifndef CONFIG_UNIFIED_KERNEL
+ 	/* Verify that the area passed by the user is writeable */
+ 	if (!access_ok(VERIFY_WRITE, events, maxevents * sizeof(struct epoll_event))) {
+ 		error = -EFAULT;
+ 		goto error_return;
+ 	}
++#endif
++
++	/* Get the "struct file *" for the eventpoll file */
++	error = -EBADF;
++	file = fget(epfd);
++	if (!file)
++		goto error_return;
++
++	/*
++	 * We have to check that the file structure underneath the fd
++	 * the user passed to us _is_ an eventpoll file.
++	 */
++	error = -EINVAL;
++	if (!is_file_epoll(file))
++		goto error_fput;
++
++	/*
++	 * At this point it is safe to assume that the "private_data" contains
++	 * our own data structure.
++	 */
++	ep = file->private_data;
++
++	/* Time to fish for events ... */
++	error = ep_poll(ep, events, maxevents, timeout);
++
++error_fput:
++	fput(file);
++error_return:
++
++	return error;
++}
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_epoll_wait);
++#endif
++
++int uk_epoll_wait(int epfd, struct epoll_event * events,
++		int maxevents, int timeout)
++{
++	int error;
++	struct file *file;
++	struct eventpoll *ep;
++
++	/* The maximum number of event must be greater than zero */
++	if (maxevents <= 0 || maxevents > EP_MAX_EVENTS)
++		return -EINVAL;
+ 
+ 	/* Get the "struct file *" for the eventpoll file */
+ 	error = -EBADF;
+@@ -1364,6 +1436,9 @@
+ 
+ 	return error;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(uk_epoll_wait);
++#endif
+ 
+ #ifdef HAVE_SET_RESTORE_SIGMASK
+ 
+diff -urN linux-2.6.34/fs/exec.c linux-2.6.34-longene/fs/exec.c
+--- linux-2.6.34/fs/exec.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/fs/exec.c	2010-09-06 10:30:15.895479784 +0800
+@@ -61,6 +61,12 @@
+ #include <asm/tlb.h>
+ #include "internal.h"
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++#include <linux/win32_thread.h>
++
++extern struct task_ethread_operations* tet_ops;
++#endif
++
+ int core_uses_pid;
+ char core_pattern[CORENAME_MAX_SIZE] = "core";
+ unsigned int core_pipe_limit;
+@@ -758,7 +764,11 @@
+  * disturbing other processes.  (Other processes might share the signal
+  * table via the CLONE_SIGHAND option to clone().)
+  */
++#ifdef CONFIG_UNIFIED_KERNEL
++int de_thread(struct task_struct *tsk)
++#else
+ static int de_thread(struct task_struct *tsk)
++#endif
+ {
+ 	struct signal_struct *sig = tsk->signal;
+ 	struct sighand_struct *oldsighand = tsk->sighand;
+@@ -895,6 +905,9 @@
+ 	BUG_ON(!thread_group_leader(tsk));
+ 	return 0;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(de_thread);
++#endif
+ 
+ /*
+  * These functions flushes out all traces of the currently running executable
+@@ -977,6 +990,11 @@
+ 	if (retval)
+ 		goto out;
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++    if(current->ethread)
++        tet_ops->ethread_notify_execve(current);
++#endif
++
+ 	bprm->mm = NULL;		/* We're using it now */
+ 
+ 	current->flags &= ~PF_RANDOMIZE;
+@@ -1745,6 +1763,9 @@
+ 		break;
+ 	}
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(set_dumpable);
++#endif
+ 
+ static int __get_dumpable(unsigned long mm_flags)
+ {
+diff -urN linux-2.6.34/fs/ext3/namei.c linux-2.6.34-longene/fs/ext3/namei.c
+--- linux-2.6.34/fs/ext3/namei.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/fs/ext3/namei.c	2010-09-06 10:30:19.301895750 +0800
+@@ -40,6 +40,9 @@
+ #include "namei.h"
+ #include "xattr.h"
+ #include "acl.h"
++#ifdef CONFIG_UNIFIED_KERNEL
++#include <linux/ctype.h>
++#endif
+ 
+ /*
+  * define how far ahead to read directories while searching them.
+@@ -795,6 +798,15 @@
+ 		return 0;
+ 	if (!de->inode)
+ 		return 0;
++#ifdef CONFIG_UNIFIED_KERNEL
++	if (current->ethread) {
++		int	i;
++		for (i = 0; i < len; i++)
++			if (tolower(name[i]) != tolower(de->name[i]))
++				return 0;
++		return 1;
++	}
++#endif
+ 	return !memcmp(name, de->name, len);
+ }
+ 
+diff -urN linux-2.6.34/fs/ext4/namei.c linux-2.6.34-longene/fs/ext4/namei.c
+--- linux-2.6.34/fs/ext4/namei.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/fs/ext4/namei.c	2010-09-06 10:30:17.348987944 +0800
+@@ -39,6 +39,9 @@
+ 
+ #include "xattr.h"
+ #include "acl.h"
++#ifdef CONFIG_UNIFIED_KERNEL
++#include <linux/ctype.h>
++#endif
+ 
+ /*
+  * define how far ahead to read directories while searching them.
+@@ -817,6 +820,15 @@
+ 		return 0;
+ 	if (!de->inode)
+ 		return 0;
++#ifdef CONFIG_UNIFIED_KERNEL
++	if (current->ethread) {
++		int	i;
++		for (i = 0; i < len; i++)
++			if (tolower(name[i]) != tolower(de->name[i]))
++				return 0;
++		return 1;
++	}
++#endif
+ 	return !memcmp(name, de->name, len);
+ }
+ 
+diff -urN linux-2.6.34/fs/fcntl.c linux-2.6.34-longene/fs/fcntl.c
+--- linux-2.6.34/fs/fcntl.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/fs/fcntl.c	2010-09-06 10:30:23.289861289 +0800
+@@ -126,6 +126,9 @@
+ 	}
+ 	return sys_dup3(oldfd, newfd, 0);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_dup2);
++#endif
+ 
+ SYSCALL_DEFINE1(dup, unsigned int, fildes)
+ {
+@@ -141,6 +144,9 @@
+ 	}
+ 	return ret;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_dup);
++#endif
+ 
+ #define SETFL_MASK (O_APPEND | O_NONBLOCK | O_NDELAY | O_DIRECT | O_NOATIME)
+ 
+@@ -439,6 +445,9 @@
+ out:
+ 	return err;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_fcntl);
++#endif
+ 
+ #if BITS_PER_LONG == 32
+ SYSCALL_DEFINE3(fcntl64, unsigned int, fd, unsigned int, cmd,
+diff -urN linux-2.6.34/fs/file.c linux-2.6.34-longene/fs/file.c
+--- linux-2.6.34/fs/file.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/fs/file.c	2010-09-06 10:30:17.798149478 +0800
+@@ -488,6 +488,9 @@
+ 	spin_unlock(&files->file_lock);
+ 	return error;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(alloc_fd);
++#endif
+ 
+ int get_unused_fd(void)
+ {
+diff -urN linux-2.6.34/fs/namei.c linux-2.6.34-longene/fs/namei.c
+--- linux-2.6.34/fs/namei.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/fs/namei.c	2010-09-06 10:30:18.725856708 +0800
+@@ -2130,6 +2130,9 @@
+ {
+ 	return sys_mkdirat(AT_FDCWD, pathname, mode);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_mkdir);
++#endif
+ 
+ /*
+  * We try to drop the dentry early: we should have
+@@ -2352,6 +2355,9 @@
+ {
+ 	return do_unlinkat(AT_FDCWD, pathname);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_unlink);
++#endif
+ 
+ int vfs_symlink(struct inode *dir, struct dentry *dentry, const char *oldname)
+ {
+@@ -2765,6 +2771,9 @@
+ {
+ 	return sys_renameat(AT_FDCWD, oldname, AT_FDCWD, newname);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_rename);
++#endif
+ 
+ int vfs_readlink(struct dentry *dentry, char __user *buffer, int buflen, const char *link)
+ {
+diff -urN linux-2.6.34/fs/open.c linux-2.6.34-longene/fs/open.c
+--- linux-2.6.34/fs/open.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/fs/open.c	2010-09-06 10:30:36.382719078 +0800
+@@ -176,6 +176,9 @@
+ out:
+ 	return error;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_fstatfs);
++#endif
+ 
+ SYSCALL_DEFINE3(fstatfs64, unsigned int, fd, size_t, sz, struct statfs64 __user *, buf)
+ {
+@@ -225,6 +228,9 @@
+ 	mutex_unlock(&dentry->d_inode->i_mutex);
+ 	return ret;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(do_truncate);
++#endif
+ 
+ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ {
+@@ -348,6 +354,9 @@
+ 	asmlinkage_protect(2, ret, fd, length);
+ 	return ret;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_ftruncate);
++#endif
+ 
+ /* LFS versions of truncate are only needed on 32 bit machines */
+ #if BITS_PER_LONG == 32
+@@ -544,6 +553,9 @@
+ out:
+ 	return error;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_chdir);
++#endif
+ 
+ SYSCALL_DEFINE1(fchdir, unsigned int, fd)
+ {
+@@ -1075,6 +1087,9 @@
+ 	asmlinkage_protect(3, ret, filename, flags, mode);
+ 	return ret;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_open);
++#endif
+ 
+ SYSCALL_DEFINE4(openat, int, dfd, const char __user *, filename, int, flags,
+ 		int, mode)
+diff -urN linux-2.6.34/fs/read_write.c linux-2.6.34-longene/fs/read_write.c
+--- linux-2.6.34/fs/read_write.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/fs/read_write.c	2010-09-06 10:30:21.034008241 +0800
+@@ -387,6 +387,9 @@
+ 
+ 	return ret;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_read);
++#endif
+ 
+ SYSCALL_DEFINE3(write, unsigned int, fd, const char __user *, buf,
+ 		size_t, count)
+@@ -405,6 +408,9 @@
+ 
+ 	return ret;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_write);
++#endif
+ 
+ SYSCALL_DEFINE(pread64)(unsigned int fd, char __user *buf,
+ 			size_t count, loff_t pos)
+@@ -426,6 +432,10 @@
+ 
+ 	return ret;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_pread64);
++#endif
++
+ #ifdef CONFIG_HAVE_SYSCALL_WRAPPERS
+ asmlinkage long SyS_pread64(long fd, long buf, long count, loff_t pos)
+ {
+@@ -455,6 +465,10 @@
+ 
+ 	return ret;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_pwrite64);
++#endif
++
+ #ifdef CONFIG_HAVE_SYSCALL_WRAPPERS
+ asmlinkage long SyS_pwrite64(long fd, long buf, long count, loff_t pos)
+ {
+diff -urN linux-2.6.34/fs/select.c linux-2.6.34-longene/fs/select.c
+--- linux-2.6.34/fs/select.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/fs/select.c	2010-09-06 10:30:20.126531430 +0800
+@@ -945,6 +945,9 @@
+ 	}
+ 	return ret;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_poll);
++#endif
+ 
+ #ifdef HAVE_SET_RESTORE_SIGMASK
+ SYSCALL_DEFINE5(ppoll, struct pollfd __user *, ufds, unsigned int, nfds,
+diff -urN linux-2.6.34/fs/stat.c linux-2.6.34-longene/fs/stat.c
+--- linux-2.6.34/fs/stat.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/fs/stat.c	2010-09-06 10:30:20.765861433 +0800
+@@ -243,6 +243,9 @@
+ 		return error;
+ 	return cp_new_stat(&stat, statbuf);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_newstat);
++#endif
+ 
+ SYSCALL_DEFINE2(newlstat, char __user *, filename, struct stat __user *, statbuf)
+ {
+@@ -255,6 +258,9 @@
+ 
+ 	return cp_new_stat(&stat, statbuf);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_newlstat);
++#endif
+ 
+ #if !defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_SYS_NEWFSTATAT)
+ SYSCALL_DEFINE4(newfstatat, int, dfd, char __user *, filename,
+@@ -280,6 +286,9 @@
+ 
+ 	return error;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_newfstat);
++#endif
+ 
+ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+ 		char __user *, buf, int, bufsiz)
+@@ -313,6 +322,9 @@
+ {
+ 	return sys_readlinkat(AT_FDCWD, path, buf, bufsiz);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_readlink);
++#endif
+ 
+ 
+ /* ---------- LFS-64 ----------- */
+diff -urN linux-2.6.34/fs/sync.c linux-2.6.34-longene/fs/sync.c
+--- linux-2.6.34/fs/sync.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/fs/sync.c	2010-09-06 10:30:22.301861412 +0800
+@@ -281,6 +281,9 @@
+ {
+ 	return do_fsync(fd, 0);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_fsync);
++#endif
+ 
+ SYSCALL_DEFINE1(fdatasync, unsigned int, fd)
+ {
+diff -urN linux-2.6.34/include/linux/init_task.h linux-2.6.34-longene/include/linux/init_task.h
+--- linux-2.6.34/include/linux/init_task.h	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/include/linux/init_task.h	2010-09-06 10:26:13.165530790 +0800
+@@ -107,6 +107,7 @@
+  *  INIT_TASK is used to set up the first task table, touch at
+  * your own risk!. Base=0, limit=0x1fffff (=2MB)
+  */
++#ifndef CONFIG_UNIFIED_KERNEL
+ #define INIT_TASK(tsk)	\
+ {									\
+ 	.state		= 0,						\
+@@ -173,6 +174,75 @@
+ 	INIT_TRACE_RECURSION						\
+ 	INIT_TASK_RCU_PREEMPT(tsk)					\
+ }
++#else
++#define INIT_TASK(tsk)	\
++{									\
++	.state		= 0,						\
++	.stack		= &init_thread_info,				\
++	.usage		= ATOMIC_INIT(2),				\
++	.flags		= PF_KTHREAD,					\
++	.lock_depth	= -1,						\
++	.prio		= MAX_PRIO-20,					\
++	.static_prio	= MAX_PRIO-20,					\
++	.normal_prio	= MAX_PRIO-20,					\
++	.policy		= SCHED_NORMAL,					\
++	.cpus_allowed	= CPU_MASK_ALL,					\
++	.mm		= NULL,						\
++	.active_mm	= &init_mm,					\
++	.se		= {						\
++		.group_node 	= LIST_HEAD_INIT(tsk.se.group_node),	\
++	},								\
++	.rt		= {						\
++		.run_list	= LIST_HEAD_INIT(tsk.rt.run_list),	\
++		.time_slice	= HZ, 					\
++		.nr_cpus_allowed = NR_CPUS,				\
++	},								\
++	.tasks		= LIST_HEAD_INIT(tsk.tasks),			\
++	.pushable_tasks = PLIST_NODE_INIT(tsk.pushable_tasks, MAX_PRIO), \
++	.ptraced	= LIST_HEAD_INIT(tsk.ptraced),			\
++	.ptrace_entry	= LIST_HEAD_INIT(tsk.ptrace_entry),		\
++	.real_parent	= &tsk,						\
++	.parent		= &tsk,						\
++	.children	= LIST_HEAD_INIT(tsk.children),			\
++	.sibling	= LIST_HEAD_INIT(tsk.sibling),			\
++	.group_leader	= &tsk,						\
++	.real_cred	= &init_cred,					\
++	.cred		= &init_cred,					\
++	.cred_guard_mutex =						\
++		 __MUTEX_INITIALIZER(tsk.cred_guard_mutex),		\
++	.comm		= "swapper",					\
++	.thread		= INIT_THREAD,					\
++	.fs		= &init_fs,					\
++	.files		= &init_files,					\
++	.signal		= &init_signals,				\
++	.sighand	= &init_sighand,				\
++	.nsproxy	= &init_nsproxy,				\
++	.pending	= {						\
++		.list = LIST_HEAD_INIT(tsk.pending.list),		\
++		.signal = {{0}}},					\
++	.blocked	= {{0}},					\
++	.alloc_lock	= __RW_LOCK_UNLOCKED(tsk.alloc_lock),		\
++	.journal_info	= NULL,						\
++	.cpu_timers	= INIT_CPU_TIMERS(tsk.cpu_timers),		\
++	.fs_excl	= ATOMIC_INIT(0),				\
++	.pi_lock	= __RAW_SPIN_LOCK_UNLOCKED(tsk.pi_lock),	\
++	.timer_slack_ns = 50000, /* 50 usec default slack */		\
++	.pids = {							\
++		[PIDTYPE_PID]  = INIT_PID_LINK(PIDTYPE_PID),		\
++		[PIDTYPE_PGID] = INIT_PID_LINK(PIDTYPE_PGID),		\
++		[PIDTYPE_SID]  = INIT_PID_LINK(PIDTYPE_SID),		\
++	},								\
++	.dirties = INIT_PROP_LOCAL_SINGLE(dirties),			\
++	INIT_IDS							\
++	INIT_PERF_EVENTS(tsk)						\
++	INIT_TRACE_IRQFLAGS						\
++	INIT_LOCKDEP							\
++	INIT_FTRACE_GRAPH						\
++	INIT_TRACE_RECURSION						\
++	INIT_TASK_RCU_PREEMPT(tsk)					\
++	.ethread	= NULL					\
++}
++#endif
+ 
+ 
+ #define INIT_CPU_TIMERS(cpu_timers)					\
+diff -urN linux-2.6.34/include/linux/sched.h linux-2.6.34-longene/include/linux/sched.h
+--- linux-2.6.34/include/linux/sched.h	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/include/linux/sched.h	2010-09-06 10:26:13.433928447 +0800
+@@ -108,6 +108,11 @@
+  */
+ #define CLONE_KERNEL	(CLONE_FS | CLONE_FILES | CLONE_SIGHAND)
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++#define	CREATE_PROCESS	1
++#define	CREATE_THREAD	2
++#endif
++
+ /*
+  * These are the constant used to fake the fixed-point load-average
+  * counting. Some notes:
+@@ -1357,7 +1362,11 @@
+    	u32 self_exec_id;
+ /* Protection of (de-)allocation: mm, files, fs, tty, keyrings, mems_allowed,
+  * mempolicy */
++#ifndef CONFIG_UNIFIED_KERNEL
+ 	spinlock_t alloc_lock;
++#else
++	rwlock_t alloc_lock;
++#endif
+ 
+ #ifdef CONFIG_GENERIC_HARDIRQS
+ 	/* IRQ handler threads */
+@@ -1505,6 +1514,9 @@
+ 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
+ 	} memcg_batch;
+ #endif
++#ifdef CONFIG_UNIFIED_KERNEL
++	struct ethread *ethread;
++#endif
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+@@ -2202,12 +2214,20 @@
+  */
+ static inline void task_lock(struct task_struct *p)
+ {
++#ifndef CONFIG_UNIFIED_KERNEL
+ 	spin_lock(&p->alloc_lock);
++#else
++	write_lock(&p->alloc_lock);
++#endif
+ }
+ 
+ static inline void task_unlock(struct task_struct *p)
+ {
++#ifndef CONFIG_UNIFIED_KERNEL
+ 	spin_unlock(&p->alloc_lock);
++#else
++	write_unlock(&p->alloc_lock);
++#endif
+ }
+ 
+ extern struct sighand_struct *lock_task_sighand(struct task_struct *tsk,
+diff -urN linux-2.6.34/include/linux/win32_thread.h linux-2.6.34-longene/include/linux/win32_thread.h
+--- linux-2.6.34/include/linux/win32_thread.h	1970-01-01 08:00:00.000000000 +0800
++++ linux-2.6.34-longene/include/linux/win32_thread.h	2010-09-06 10:26:11.941861287 +0800
+@@ -0,0 +1,41 @@
++/*
++ * win32_thread.h
++ *
++ * Copyright (C) 2006  Insigme Co., Ltd
++ *
++ * Authors: 
++ * - Decao Mao, Chenzhan Hu, Lixing Chu, Limin Jin, Liwei Zhou, Zhiqiang Jiao
++ *
++ * This software has been developed while working on the Linux Unified Kernel
++ * project (http://linux.insigma.com.cn) in the Insigma Research Institute,  
++ * which is a subdivision of Insigma Co., Ltd (http://www.insigma.com.cn).
++ * 
++ * The project is sponsored by Insigma Co., Ltd.
++ *
++ * The authors can be reached at linux@insigma.com.cn.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation; either version 2 of the  License, or (at your
++ * option) any later version.
++ *
++ * Revision History:
++ *   Jan 2006 - Created.
++ */
++
++#ifndef _WIN32_THREAD_H_
++#define _WIN32_THREAD_H_
++
++struct task_ethread_operations {
++	void (*add_ethread)(struct task_struct *tsk, struct ethread *thread);
++	void (*remove_ethread)(struct task_struct *tsk, struct ethread *thread);
++	void (*exit_ethread)(struct task_struct *tsk);
++	void (*ethread_notify_exit)(struct task_struct *tsk, int exit_code);
++	int (*ethread_notify_signal)(struct task_struct *tsk, int signal);
++	void (*ethread_notify_execve)(struct task_struct *tsk);
++	void (*ethread_notify_fork)(struct task_struct *tsk,
++                         struct task_struct *child,
++                         unsigned long clone_flags);
++};
++
++#endif
+diff -urN linux-2.6.34/init/Kconfig linux-2.6.34-longene/init/Kconfig
+--- linux-2.6.34/init/Kconfig	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/init/Kconfig	2010-09-06 10:29:31.425858951 +0800
+@@ -1133,6 +1133,10 @@
+ 
+ 	  See Documentation/slow-work.txt.
+ 
++config UNIFIED_KERNEL
++	bool "Longene support"
++	default y
++
+ endmenu		# General setup
+ 
+ config HAVE_GENERIC_DMA_COHERENT
+diff -urN linux-2.6.34/kernel/exit.c linux-2.6.34-longene/kernel/exit.c
+--- linux-2.6.34/kernel/exit.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/kernel/exit.c	2010-09-06 10:32:55.689864834 +0800
+@@ -57,6 +57,12 @@
+ #include <asm/mmu_context.h>
+ #include "cred-internals.h"
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++#include <linux/win32_thread.h>
++
++extern struct task_ethread_operations* tet_ops;
++#endif
++
+ static void exit_mm(struct task_struct * tsk);
+ 
+ static void __unhash_process(struct task_struct *p)
+@@ -535,6 +541,9 @@
+ 		rcu_read_unlock();
+ 	}
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(put_files_struct);
++#endif
+ 
+ void reset_files_struct(struct files_struct *files)
+ {
+@@ -978,6 +987,12 @@
+ 	trace_sched_process_exit(tsk);
+ 
+ 	exit_sem(tsk);
++#ifdef CONFIG_UNIFIED_KERNEL
++    if(tsk->ethread) {
++        tet_ops->ethread_notify_exit(tsk, tsk->exit_code);
++        tet_ops->exit_ethread(tsk);
++    }
++#endif
+ 	exit_files(tsk);
+ 	exit_fs(tsk);
+ 	check_stack_usage();
+@@ -1042,6 +1057,94 @@
+ 
+ EXPORT_SYMBOL_GPL(do_exit);
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++extern void exit_thread_for_task(struct task_struct *tsk);
++
++void do_exit_task(struct task_struct *tsk, long code)
++{
++	int group_dead;
++
++	profile_task_exit(tsk);
++
++	WARN_ON(atomic_read(&tsk->fs_excl));
++
++	tracehook_report_exit(&code);
++
++	validate_creds_for_do_exit(tsk);
++
++	exit_irq_thread();
++
++	exit_signals(tsk);  /* sets PF_EXITING */
++	/*
++	 * tsk->flags are checked in the futex code to protect against
++	 * an exiting task cleaning up the robust pi futexes.
++	 */
++	smp_mb();
++	raw_spin_unlock_wait(&tsk->pi_lock);
++
++	acct_update_integrals(tsk);
++	/* sync mm's RSS info before statistics gathering */
++	if (tsk->mm)
++		sync_mm_rss(tsk, tsk->mm);
++	group_dead = atomic_dec_and_test(&tsk->signal->live);
++	if (group_dead) {
++		hrtimer_cancel(&tsk->signal->real_timer);
++		exit_itimers(tsk->signal);
++		if (tsk->mm)
++			setmax_mm_hiwater_rss(&tsk->signal->maxrss, tsk->mm);
++	}
++	acct_collect(code, group_dead);
++	if (group_dead)
++		tty_audit_exit();
++
++	tsk->exit_code = code;
++	taskstats_exit(tsk, group_dead);
++
++	exit_mm(tsk);
++
++	if (group_dead)
++		acct_process();
++	trace_sched_process_exit(tsk);
++
++	exit_sem(tsk);
++#ifdef CONFIG_UNIFIED_KERNEL
++    if(tsk->ethread) {
++        tet_ops->ethread_notify_exit(tsk, tsk->exit_code);
++        tet_ops->exit_ethread(tsk);
++    }
++#endif
++	exit_files(tsk);
++	exit_fs(tsk);
++	check_stack_usage();
++	exit_thread_for_task(tsk);
++	cgroup_exit(tsk, 1);
++
++	if (group_dead)
++		disassociate_ctty(1);
++
++	module_put(task_thread_info(tsk)->exec_domain->module);
++
++	proc_exit_connector(tsk);
++
++	/*
++	 * FIXME: do that only when needed, using sched_exit tracepoint
++	 */
++	flush_ptrace_hw_breakpoint(tsk);
++	/*
++	 * Flush inherited counters to the parent - before the parent
++	 * gets woken up by child-exit notifications.
++	 */
++	perf_event_exit_task(tsk);
++
++	exit_notify(tsk, group_dead);
++#ifdef CONFIG_NUMA
++	mpol_put(tsk->mempolicy);
++	tsk->mempolicy = NULL;
++#endif
++}
++EXPORT_SYMBOL(do_exit_task);
++#endif
++
+ NORET_TYPE void complete_and_exit(struct completion *comp, long code)
+ {
+ 	if (comp)
+@@ -1087,6 +1190,9 @@
+ 	do_exit(exit_code);
+ 	/* NOTREACHED */
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(do_group_exit);
++#endif
+ 
+ /*
+  * this kills every thread in the thread group. Note that any externally
+diff -urN linux-2.6.34/kernel/fork.c linux-2.6.34-longene/kernel/fork.c
+--- linux-2.6.34/kernel/fork.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/kernel/fork.c	2010-09-06 10:30:12.380021615 +0800
+@@ -75,6 +75,18 @@
+ 
+ #include <trace/events/sched.h>
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++#include <linux/win32_thread.h>
++
++struct task_ethread_operations* tet_ops;
++
++void init_tet_ops(struct task_ethread_operations* ops)
++{
++    tet_ops = ops;
++}
++EXPORT_SYMBOL(init_tet_ops);
++#endif
++
+ /*
+  * Protected counters by write_lock_irq(&tasklist_lock)
+  */
+@@ -780,6 +792,9 @@
+ out:
+ 	return error;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(copy_files);
++#endif
+ 
+ static int copy_io(unsigned long clone_flags, struct task_struct *tsk)
+ {
+@@ -1039,7 +1054,11 @@
+ 	INIT_LIST_HEAD(&p->sibling);
+ 	rcu_copy_process(p);
+ 	p->vfork_done = NULL;
++#ifdef CONFIG_UNIFIED_KERNEL
++	rwlock_init(&p->alloc_lock);
++#else
+ 	spin_lock_init(&p->alloc_lock);
++#endif
+ 
+ 	init_sigpending(&p->pending);
+ 
+@@ -1203,6 +1222,12 @@
+ 	p->pdeath_signal = 0;
+ 	p->exit_state = 0;
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++	p->ethread= NULL;
++    if(current->ethread)
++        tet_ops->ethread_notify_fork(current, p, clone_flags);
++#endif
++
+ 	/*
+ 	 * Ok, make it visible to the rest of the system.
+ 	 * We dont wake it up yet.
+@@ -1586,7 +1611,11 @@
+ /*
+  * Unshare file descriptor table if it is being shared
+  */
++#ifdef CONFIG_UNIFIED_KERNEL
++int unshare_fd(unsigned long unshare_flags, struct files_struct **new_fdp)
++#else
+ static int unshare_fd(unsigned long unshare_flags, struct files_struct **new_fdp)
++#endif
+ {
+ 	struct files_struct *fd = current->files;
+ 	int error = 0;
+@@ -1600,6 +1629,9 @@
+ 
+ 	return 0;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(unshare_fd);
++#endif
+ 
+ /*
+  * unshare allows a process to 'unshare' part of the process
+@@ -1741,3 +1773,666 @@
+ 	task_unlock(task);
+ 	return 0;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(unshare_files);
++#endif
++
++#ifdef CONFIG_UNIFIED_KERNEL
++/* FIXME: added for NtCreateProcess() and NtCreateThread() */
++
++extern int init_new_context_from_task(struct task_struct *ptsk, struct task_struct *tsk, struct mm_struct *mm);
++
++static inline void clone_files(struct task_struct *tsk)
++{
++	if (tsk->files)
++		atomic_inc(&tsk->files->count);
++}
++
++static inline void clone_fs(struct task_struct *tsk)
++{
++	struct fs_struct *fs = tsk->fs;
++
++	write_lock(&fs->lock);
++	if (fs->in_exec) {
++		write_unlock(&fs->lock);
++		return;
++	}
++	fs->users++;
++	write_unlock(&fs->lock);
++}
++
++static inline void clone_sighand(struct task_struct *tsk)
++{
++	atomic_inc(&tsk->sighand->count);
++}
++
++static inline void clone_signal(struct task_struct *tsk)
++{
++	atomic_inc(&tsk->signal->count);
++	atomic_inc(&tsk->signal->live);
++}
++
++static inline int clone_mm(struct task_struct *parent, struct task_struct *child)
++{
++	struct mm_struct * mm, *oldmm;
++
++	child->min_flt = child->maj_flt = 0;
++	child->nvcsw = child->nivcsw = 0;
++#ifdef CONFIG_DETECT_HUNG_TASK
++	child->last_switch_count = child->nvcsw + child->nivcsw;
++#endif
++
++	child->mm = NULL;
++	child->active_mm = NULL;
++
++	/*
++	 * Are we cloning a kernel thread?
++	 *
++	 * We need to steal a active VM for that..
++	 */
++	oldmm = parent->mm;
++	if (!oldmm)
++		return 0;
++
++	atomic_inc(&oldmm->mm_users);
++	mm = oldmm;
++
++	/*
++	 * There are cases where the PTL is held to ensure no
++	 * new threads start up in user mode using an mm, which
++	 * allows optimizing out ipis; the tlb_gather_mmu code
++	 * is an example.
++	 */
++	spin_unlock_wait(&oldmm->page_table_lock);
++
++	child->mm = mm;
++	child->active_mm = mm;
++
++	return 0;
++}
++
++static int dup_files(struct task_struct * tsk)
++{
++	struct files_struct *newf;
++	struct fdtable *new_fdt;
++	int error;
++
++	error = -ENOMEM;
++	newf = kmem_cache_alloc(files_cachep, GFP_KERNEL);
++	if (!newf)
++		goto out;
++
++	atomic_set(&newf->count, 1);
++
++	spin_lock_init(&newf->file_lock);
++	newf->next_fd = 0;
++	new_fdt = &newf->fdtab;
++	new_fdt->max_fds = NR_OPEN_DEFAULT;
++	memset(&newf->close_on_exec_init, 0, sizeof(newf->close_on_exec_init));
++	new_fdt->close_on_exec = (fd_set *)&newf->close_on_exec_init;
++	memset(&newf->open_fds_init, 0, sizeof(newf->open_fds_init));
++	new_fdt->open_fds = (fd_set *)&newf->open_fds_init;
++	memset(&newf->fd_array, 0, sizeof(newf->fd_array));
++	new_fdt->fd = &newf->fd_array[0];
++	INIT_RCU_HEAD(&new_fdt->rcu);
++	new_fdt->next = NULL;
++
++	rcu_assign_pointer(newf->fdt, new_fdt);
++
++	tsk->files = newf;
++	error = 0;
++
++out:
++	return error;
++}
++
++static inline int dup_sighand(struct task_struct *parent, struct task_struct *child)
++{
++	struct sighand_struct *sig;
++
++	sig = kmem_cache_alloc(sighand_cachep, GFP_KERNEL);
++	rcu_assign_pointer(child->sighand, sig);
++	if (!sig)
++		return -ENOMEM;
++	atomic_set(&sig->count, 1);
++	memcpy(sig->action, current->sighand->action, sizeof(sig->action));
++	return 0;
++}
++
++static inline int create_mm(struct task_struct *parent, struct task_struct *child)
++{
++	struct mm_struct *mm;
++
++	mm = allocate_mm();
++	if (!mm)
++		return -ENOMEM;
++
++	/* Copy the current MM stuff.. */
++	memset(mm, 0, sizeof(*mm));
++	if (!mm_init(mm, parent))
++		return -ENOMEM;
++
++	init_new_context_from_task(parent, child, mm);
++
++	if (!mm->get_unmapped_area)
++		mm->get_unmapped_area = parent->mm->get_unmapped_area;
++	if (!mm->unmap_area)
++		mm->unmap_area = parent->mm->unmap_area;
++
++	child->mm = mm;
++	child->active_mm = mm;
++
++	return 0;
++}
++
++static inline int dup_signal(struct task_struct *parent, struct task_struct *child)
++{
++	struct signal_struct *sig;
++
++	sig = kmem_cache_zalloc(signal_cachep, GFP_KERNEL);
++	child->signal = sig;
++	if (!sig)
++		return -ENOMEM;
++
++	atomic_set(&sig->count, 1);
++	atomic_set(&sig->live, 1);
++	init_waitqueue_head(&sig->wait_chldexit);
++	sig->curr_target = child;
++	init_sigpending(&sig->shared_pending);
++	INIT_LIST_HEAD(&sig->posix_timers);
++
++	hrtimer_init(&sig->real_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	sig->real_timer.function = it_real_fn;
++
++	task_lock(parent->group_leader);
++	memcpy(sig->rlim, parent->signal->rlim, sizeof sig->rlim);
++	task_unlock(parent->group_leader);
++
++	posix_cpu_timers_init_group(sig);
++
++	tty_audit_fork(sig);
++
++	sig->oom_adj = parent->signal->oom_adj;
++
++#ifdef CONFIG_AUDIT
++	/* tty_audit_fork */
++	spin_lock_irq(&parent->sighand->siglock);
++	sig->audit_tty = parent->signal->audit_tty;
++	spin_unlock_irq(&parent->sighand->siglock);
++	sig->tty_audit_buf = NULL;
++#endif
++
++	return 0;
++}
++
++static inline int dup_fs(struct task_struct *parent, struct task_struct *child)
++{
++	child->fs = copy_fs_struct(parent->fs);
++	return child->fs ? 0 : -ENOMEM;
++}
++
++static struct task_struct *copy_process_from_task(struct task_struct *ptsk,
++		unsigned long process_flags,
++		unsigned long clone_flags,
++		unsigned long stack_start,
++		struct pt_regs *regs,
++		unsigned long stack_size,
++		int __user *child_tidptr,
++		struct pid *pid,
++		int trace)
++{
++	int retval;
++	struct task_struct *p;
++	int cgroup_callbacks_done = 0;
++
++	retval = security_task_create(clone_flags);
++	if (retval)
++		goto fork_out;
++
++	retval = -ENOMEM;
++	p = dup_task_struct(ptsk);
++	if (!p)
++		goto fork_out;
++
++	ftrace_graph_init_task(p);
++
++	rt_mutex_init_task(p);
++
++#ifdef CONFIG_PROVE_LOCKING
++	DEBUG_LOCKS_WARN_ON(!p->hardirqs_enabled);
++	DEBUG_LOCKS_WARN_ON(!p->softirqs_enabled);
++#endif
++	retval = -EAGAIN;
++	if (atomic_read(&p->real_cred->user->processes) >=
++			task_rlimit(p, RLIMIT_NPROC)) {
++		if (!capable(CAP_SYS_ADMIN) && !capable(CAP_SYS_RESOURCE) &&
++		    p->real_cred->user != INIT_USER)
++			goto bad_fork_free;
++	}
++
++	retval = copy_creds(p, clone_flags);
++	if (retval < 0)
++		goto bad_fork_free;
++
++	/*
++	 * If multiple threads are within copy_process(), then this check
++	 * triggers too late. This doesn't hurt, the check is only there
++	 * to stop root fork bombs.
++	 */
++	retval = -EAGAIN;
++	if (nr_threads >= max_threads)
++		goto bad_fork_cleanup_count;
++
++	if (!try_module_get(task_thread_info(p)->exec_domain->module))
++		goto bad_fork_cleanup_count;
++
++	p->did_exec = 0;
++	delayacct_tsk_init(p);	/* Must remain after dup_task_struct() */
++	copy_flags(clone_flags, p);
++	INIT_LIST_HEAD(&p->children);
++	INIT_LIST_HEAD(&p->sibling);
++	rcu_copy_process(p);
++	p->vfork_done = NULL;
++	rwlock_init(&p->alloc_lock);
++
++	init_sigpending(&p->pending);
++
++	p->utime = cputime_zero;
++	p->stime = cputime_zero;
++	p->gtime = cputime_zero;
++	p->utimescaled = cputime_zero;
++	p->stimescaled = cputime_zero;
++#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++	p->prev_utime = cputime_zero;
++	p->prev_stime = cputime_zero;
++#endif
++#if defined(SPLIT_RSS_COUNTING)
++	memset(&p->rss_stat, 0, sizeof(p->rss_stat));
++#endif
++
++	p->default_timer_slack_ns = ptsk->timer_slack_ns;
++
++	task_io_accounting_init(&p->ioac);
++	acct_clear_integrals(p);
++
++	posix_cpu_timers_init(p);
++
++	p->lock_depth = -1;		/* -1 = no lock */
++	do_posix_clock_monotonic_gettime(&p->start_time);
++	p->real_start_time = p->start_time;
++	monotonic_to_bootbased(&p->real_start_time);
++	p->io_context = NULL;
++	p->audit_context = NULL;
++	cgroup_fork(p);
++#ifdef CONFIG_NUMA
++	p->mempolicy = mpol_dup(p->mempolicy);
++ 	if (IS_ERR(p->mempolicy)) {
++ 		retval = PTR_ERR(p->mempolicy);
++ 		p->mempolicy = NULL;
++ 		goto bad_fork_cleanup_cgroup;
++ 	}
++	mpol_fix_fork_child_flag(p);
++#endif
++#ifdef CONFIG_TRACE_IRQFLAGS
++	p->irq_events = 0;
++#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
++	p->hardirqs_enabled = 1;
++#else
++	p->hardirqs_enabled = 0;
++#endif
++	p->hardirq_enable_ip = 0;
++	p->hardirq_enable_event = 0;
++	p->hardirq_disable_ip = _THIS_IP_;
++	p->hardirq_disable_event = 0;
++	p->softirqs_enabled = 1;
++	p->softirq_enable_ip = _THIS_IP_;
++	p->softirq_enable_event = 0;
++	p->softirq_disable_ip = 0;
++	p->softirq_disable_event = 0;
++	p->hardirq_context = 0;
++	p->softirq_context = 0;
++#endif
++#ifdef CONFIG_LOCKDEP
++	p->lockdep_depth = 0; /* no locks held yet */
++	p->curr_chain_key = 0;
++	p->lockdep_recursion = 0;
++#endif
++
++#ifdef CONFIG_DEBUG_MUTEXES
++	p->blocked_on = NULL; /* not blocked yet */
++#endif
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++	p->memcg_batch.do_batch = 0;
++	p->memcg_batch.memcg = NULL;
++#endif
++
++	p->bts = NULL;
++
++	/* Perform scheduler related setup. Assign this task to a CPU. */
++	sched_fork(p, clone_flags);
++
++	retval = perf_event_init_task(p);
++	if (retval)
++		goto bad_fork_cleanup_policy;
++
++	if ((retval = audit_alloc(p)))
++		goto bad_fork_cleanup_policy;
++	/* copy all the process information */
++	p->sysvsem.undo_list = NULL;	/* sysv semaphore is not used */
++
++	if (process_flags & CREATE_PROCESS) {
++		if ((retval = dup_files(p)))
++			goto bad_fork_cleanup_audit;
++		if ((retval = dup_fs(ptsk, p)))
++			goto bad_fork_cleanup_files;
++		if ((retval = dup_sighand(ptsk, p)))
++			goto bad_fork_cleanup_fs;
++		if ((retval = dup_signal(ptsk, p)))
++			goto bad_fork_cleanup_sighand;
++		if ((retval = create_mm(ptsk, p)))
++			goto bad_fork_cleanup_signal;
++	}
++	else {
++		clone_files(ptsk);
++		clone_fs(ptsk);
++		clone_sighand(ptsk);
++		clone_signal(ptsk);
++		clone_mm(ptsk, p);
++	}
++
++	if ((retval = copy_namespaces(clone_flags, p)))
++		goto bad_fork_cleanup_mm;
++	if ((retval = copy_io(clone_flags, p)))
++		goto bad_fork_cleanup_namespaces;
++	retval = copy_thread(clone_flags, stack_start, stack_size, p, regs);
++	if (retval)
++		goto bad_fork_cleanup_io;
++
++	/* p->thread.io_bitmap_ptr is copied from current->thread.io_bitmap_ptr */
++	if (ptsk != current) {
++		if (ptsk->thread.io_bitmap_ptr) {
++			if (!current->thread.io_bitmap_ptr) {
++				/* p->thread.io_bitmap_ptr is shared with ptsk */
++				p->thread.io_bitmap_ptr = kmalloc(IO_BITMAP_BYTES, GFP_KERNEL);
++				if (!p->thread.io_bitmap_ptr) {
++					p->thread.io_bitmap_max = 0;
++					goto bad_fork_cleanup_namespaces;
++				}
++			}
++			memcpy(p->thread.io_bitmap_ptr, ptsk->thread.io_bitmap_ptr, IO_BITMAP_BYTES);
++		}
++		else {
++			if (current->thread.io_bitmap_ptr) {
++				kfree(p->thread.io_bitmap_ptr);
++				p->thread.io_bitmap_ptr = NULL;
++			}
++		}
++	}
++
++	if (pid != &init_struct_pid) {
++		retval = -ENOMEM;
++		pid = alloc_pid(p->nsproxy->pid_ns);
++		if (!pid)
++			goto bad_fork_cleanup_io;
++
++		if (clone_flags & CLONE_NEWPID) {
++			retval = pid_ns_prepare_proc(p->nsproxy->pid_ns);
++			if (retval < 0)
++				goto bad_fork_free_pid;
++		}
++	}
++
++	p->pid = pid_nr(pid);
++	p->tgid = p->pid;
++	if (clone_flags & CLONE_THREAD)
++		p->tgid = ptsk->tgid;
++
++	if (ptsk->nsproxy != p->nsproxy) {
++		retval = ns_cgroup_clone(p, pid);
++		if (retval)
++			goto bad_fork_free_pid;
++	}
++
++	p->set_child_tid = (clone_flags & CLONE_CHILD_SETTID) ? child_tidptr : NULL;
++	/*
++	 * Clear TID on mm_release()?
++	 */
++	p->clear_child_tid = (clone_flags & CLONE_CHILD_CLEARTID) ? child_tidptr: NULL;
++#ifdef CONFIG_FUTEX
++	p->robust_list = NULL;
++#ifdef CONFIG_COMPAT
++	p->compat_robust_list = NULL;
++#endif
++	INIT_LIST_HEAD(&p->pi_state_list);
++	p->pi_state_cache = NULL;
++#endif
++	/*
++	 * sigaltstack should be cleared when sharing the same VM
++	 */
++	if ((clone_flags & (CLONE_VM|CLONE_VFORK)) == CLONE_VM)
++		p->sas_ss_sp = p->sas_ss_size = 0;
++
++	/*
++	 * Syscall tracing and stepping should be turned off in the
++	 * child regardless of CLONE_PTRACE.
++	 */
++	user_disable_single_step(p);
++	clear_tsk_thread_flag(p, TIF_SYSCALL_TRACE);
++#ifdef TIF_SYSCALL_EMU
++	clear_tsk_thread_flag(p, TIF_SYSCALL_EMU);
++#endif
++	clear_all_latency_tracing(p);
++
++	/* ok, now we should be set up.. */
++	p->exit_signal = (clone_flags & CLONE_THREAD) ? -1 : (clone_flags & CSIGNAL);
++	p->pdeath_signal = 0;
++	p->exit_state = 0;
++
++	p->ethread= NULL;
++    if(ptsk->ethread)
++        tet_ops->ethread_notify_fork(ptsk, p, clone_flags);
++
++	/*
++	 * Ok, make it visible to the rest of the system.
++	 * We dont wake it up yet.
++	 */
++	p->group_leader = p;
++	INIT_LIST_HEAD(&p->thread_group);
++
++	/* Now that the task is set up, run cgroup callbacks if
++	 * necessary. We need to run them before the task is visible
++	 * on the tasklist. */
++	cgroup_fork_callbacks(p);
++	cgroup_callbacks_done = 1;
++
++	/* Need tasklist lock for parent etc handling! */
++	write_lock_irq(&tasklist_lock);
++
++	/* CLONE_PARENT re-uses the old parent */
++	if (clone_flags & (CLONE_PARENT|CLONE_THREAD)) {
++		p->real_parent = ptsk->real_parent;
++		p->parent_exec_id = ptsk->parent_exec_id;
++	} else {
++		p->real_parent = ptsk;
++		p->parent_exec_id = ptsk->self_exec_id;
++	}
++
++	spin_lock(&ptsk->sighand->siglock);
++
++	/*
++	 * Process group and session signals need to be delivered to just the
++	 * parent before the fork or both the parent and the child after the
++	 * fork. Restart if a signal comes in before we add the new process to
++	 * it's process group.
++	 * A fatal signal pending means that parent task will exit, so the new
++	 * thread can't slip out of an OOM kill (or normal SIGKILL).
++ 	 */
++	recalc_sigpending();
++	if (signal_pending(ptsk)) {
++		spin_unlock(&ptsk->sighand->siglock);
++		write_unlock_irq(&tasklist_lock);
++		retval = -ERESTARTNOINTR;
++		goto bad_fork_free_pid;
++	}
++
++	if (clone_flags & CLONE_THREAD) {
++		atomic_inc(&ptsk->signal->count);
++		atomic_inc(&ptsk->signal->live);
++		p->group_leader = ptsk->group_leader;
++		list_add_tail_rcu(&p->thread_group, &p->group_leader->thread_group);
++	}
++
++	if (likely(p->pid)) {
++		tracehook_finish_clone(p, clone_flags, trace);
++
++		if (thread_group_leader(p)) {
++			if (clone_flags & CLONE_NEWPID)
++				p->nsproxy->pid_ns->child_reaper = p;
++
++			p->signal->leader_pid = pid;
++			tty_kref_put(p->signal->tty);
++			p->signal->tty = tty_kref_get(ptsk->signal->tty);
++			attach_pid(p, PIDTYPE_PGID, task_pgrp(ptsk));
++			attach_pid(p, PIDTYPE_SID, task_session(ptsk));
++			list_add_tail(&p->sibling, &p->real_parent->children);
++			list_add_tail_rcu(&p->tasks, &init_task.tasks);
++			__get_cpu_var(process_counts)++;
++		}
++		attach_pid(p, PIDTYPE_PID, pid);
++		nr_threads++;
++	}
++
++	total_forks++;
++	spin_unlock(&ptsk->sighand->siglock);
++	write_unlock_irq(&tasklist_lock);
++	proc_fork_connector(p);
++	cgroup_post_fork(p);
++	perf_event_fork(p);
++	return p;
++
++bad_fork_free_pid:
++	if (pid != &init_struct_pid)
++		free_pid(pid);
++bad_fork_cleanup_io:
++	if (p->io_context)
++		exit_io_context(p);
++bad_fork_cleanup_namespaces:
++	exit_task_namespaces(p);
++bad_fork_cleanup_mm:
++	if (p->mm)
++		mmput(p->mm);
++bad_fork_cleanup_signal:
++	if (!(clone_flags & CLONE_THREAD))
++		__cleanup_signal(p->signal);
++bad_fork_cleanup_sighand:
++	__cleanup_sighand(p->sighand);
++bad_fork_cleanup_fs:
++	exit_fs(p); /* blocking */
++bad_fork_cleanup_files:
++	exit_files(p); /* blocking */
++bad_fork_cleanup_audit:
++	audit_free(p);
++bad_fork_cleanup_policy:
++	perf_event_free_task(p);
++#ifdef CONFIG_NUMA
++	mpol_put(p->mempolicy);
++bad_fork_cleanup_cgroup:
++#endif
++	cgroup_exit(p, cgroup_callbacks_done);
++	delayacct_tsk_free(p);
++	module_put(task_thread_info(p)->exec_domain->module);
++bad_fork_cleanup_count:
++	atomic_dec(&p->cred->user->processes);
++	exit_creds(p);
++bad_fork_free:
++	free_task(p);
++fork_out:
++	return ERR_PTR(retval);
++}
++
++long do_fork_from_task(struct task_struct *ptsk,
++		unsigned long process_flags,
++		unsigned long clone_flags,
++		unsigned long stack_start,
++		struct pt_regs *regs,
++		unsigned long stack_size,
++		int __user *parent_tidptr,
++		int __user *child_tidptr)
++{
++	struct task_struct *p;
++	int trace = 0;
++	long nr;
++
++	/*
++	 * Do some preliminary argument and permissions checking before we
++	 * actually start allocating stuff
++	 */
++	if (clone_flags & CLONE_NEWUSER) {
++		if (clone_flags & CLONE_THREAD)
++			return -EINVAL;
++		/* hopefully this check will go away when userns support is
++		 * complete
++		 */
++		if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SETUID) ||
++				!capable(CAP_SETGID))
++			return -EPERM;
++	}
++
++	/*
++	 * We hope to recycle these flags after 2.6.26
++	 */
++	if (unlikely(clone_flags & CLONE_STOPPED)) {
++		static int __read_mostly count = 100;
++
++		if (count > 0 && printk_ratelimit()) {
++			char comm[TASK_COMM_LEN];
++
++			count--;
++			printk(KERN_INFO "fork(): process `%s' used deprecated "
++					"clone flags 0x%lx\n",
++				get_task_comm(comm, ptsk),
++				clone_flags & CLONE_STOPPED);
++		}
++	}
++
++	/*
++	 * When called from kernel_thread, don't do user tracing stuff.
++	 */
++	if (likely(user_mode(regs)))
++		trace = tracehook_prepare_clone(clone_flags);
++
++	p = copy_process_from_task(ptsk, process_flags, clone_flags, stack_start, regs, stack_size,
++			 child_tidptr, NULL, trace);
++	/*
++	 * Do this prior waking up the new thread - the thread pointer
++	 * might get invalid after that point, if the thread exits quickly.
++	 */
++	if (!IS_ERR(p)) {
++		trace_sched_process_fork(ptsk, p);
++
++		nr = task_pid_vnr(p);
++
++		if (clone_flags & CLONE_PARENT_SETTID)
++			put_user(nr, parent_tidptr);
++
++		audit_finish_fork(p);
++		tracehook_report_clone(regs, clone_flags, nr, p);
++
++		/*
++		 * We set PF_STARTING at creation in case tracing wants to
++		 * use this to distinguish a fully live task from one that
++		 * hasn't gotten to tracehook_report_clone() yet.  Now we
++		 * clear it and set the child going.
++		 */
++		p->flags &= ~PF_STARTING;
++		p->state = TASK_UNINTERRUPTIBLE;
++
++		tracehook_report_clone_complete(trace, regs,
++						clone_flags, nr, p);
++	} else {
++		nr = PTR_ERR(p);
++	}
++	return nr;
++}
++EXPORT_SYMBOL(do_fork_from_task);
++#endif
+diff -urN linux-2.6.34/kernel/pid.c linux-2.6.34-longene/kernel/pid.c
+--- linux-2.6.34/kernel/pid.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/kernel/pid.c	2010-09-06 10:30:12.133857970 +0800
+@@ -389,6 +389,9 @@
+ {
+ 	return find_task_by_pid_ns(vnr, current->nsproxy->pid_ns);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(find_task_by_vpid);
++#endif
+ 
+ struct pid *get_task_pid(struct task_struct *task, enum pid_type type)
+ {
+diff -urN linux-2.6.34/kernel/sched.c linux-2.6.34-longene/kernel/sched.c
+--- linux-2.6.34/kernel/sched.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/kernel/sched.c	2010-09-06 10:30:09.205861350 +0800
+@@ -2649,6 +2649,9 @@
+ 
+ 	put_cpu();
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sched_fork);
++#endif
+ 
+ /*
+  * wake_up_new_task - wake up a newly created task for the first time.
+@@ -2697,6 +2700,9 @@
+ 	task_rq_unlock(rq, &flags);
+ 	put_cpu();
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(wake_up_new_task);
++#endif
+ 
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 
+@@ -2896,6 +2902,9 @@
+ 	if (current->set_child_tid)
+ 		put_user(task_pid_vnr(current), current->set_child_tid);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(schedule_tail);
++#endif
+ 
+ /*
+  * context_switch - switch to the new MM and the new
+diff -urN linux-2.6.34/kernel/signal.c linux-2.6.34-longene/kernel/signal.c
+--- linux-2.6.34/kernel/signal.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/kernel/signal.c	2010-09-06 10:30:10.526144923 +0800
+@@ -37,6 +37,11 @@
+ #include <asm/siginfo.h>
+ #include "audit.h"	/* audit_signal_info() */
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++#include <linux/win32_thread.h>
++
++extern struct task_ethread_operations* tet_ops;
++#endif
+ /*
+  * SLAB caches for signal bits.
+  */
+@@ -122,7 +127,11 @@
+ 
+ #define PENDING(p,b) has_pending_signals(&(p)->signal, (b))
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++int recalc_sigpending_tsk(struct task_struct *t)
++#else
+ static int recalc_sigpending_tsk(struct task_struct *t)
++#endif
+ {
+ 	if (t->signal->group_stop_count > 0 ||
+ 	    PENDING(&t->pending, &t->blocked) ||
+@@ -509,6 +518,11 @@
+ 		}
+ 	}
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++    if(current->ethread)
++        tet_ops->ethread_notify_signal(current, signr);
++#endif
++
+ 	recalc_sigpending();
+ 	if (!signr)
+ 		return 0;
+@@ -1708,6 +1722,9 @@
+ 	ptrace_stop(exit_code, 1, &info);
+ 	spin_unlock_irq(&current->sighand->siglock);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(ptrace_notify);
++#endif
+ 
+ /*
+  * This performs the stopping for SIGSTOP and other stop signals.
+@@ -1985,6 +2002,11 @@
+ 		/*
+ 		 * Death signals, no core dump.
+ 		 */
++#ifdef CONFIG_UNIFIED_KERNEL
++		if (current->ethread && !(current->signal->flags & SIGNAL_GROUP_EXIT))
++			do_exit((current->exit_state & 0xff) << 8);
++		else
++#endif
+ 		do_group_exit(info->si_signo);
+ 		/* NOTREACHED */
+ 	}
+@@ -2320,6 +2342,9 @@
+ 
+ 	return kill_something_info(sig, &info, pid);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_kill);
++#endif
+ 
+ static int
+ do_send_specific(pid_t tgid, pid_t pid, int sig, struct siginfo *info)
+diff -urN linux-2.6.34/mm/mmap.c linux-2.6.34-longene/mm/mmap.c
+--- linux-2.6.34/mm/mmap.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/mm/mmap.c	2010-09-06 10:29:35.237424971 +0800
+@@ -44,6 +44,19 @@
+ #define arch_rebalance_pgtables(addr, len)		(addr)
+ #endif
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++
++#define MAP_RESERVE     0x10000000
++#define MAP_TOP_DOWN    0x20000000
++
++#define MMAP_TOP_DOWN_BASE	0x7fff0000
++
++#define RESERVE_PAGE_SIZE	(16 * PAGE_SIZE)
++#define RESERVE_PAGE_SHIFT	(PAGE_SHIFT + 4)
++#define RESERVE_PAGE_MASK	(~(RESERVE_PAGE_SIZE - 1))
++
++#endif
++
+ static void unmap_region(struct mm_struct *mm,
+ 		struct vm_area_struct *vma, struct vm_area_struct *prev,
+ 		unsigned long start, unsigned long end);
+@@ -1367,6 +1380,9 @@
+ 	struct mm_struct *mm = current->mm;
+ 	struct vm_area_struct *vma;
+ 	unsigned long start_addr;
++#ifdef CONFIG_UNIFIED_KERNEL
++	unsigned long reserved_len = (len + RESERVE_PAGE_SIZE - 1) & RESERVE_PAGE_MASK;
++#endif
+ 
+ 	if (len > TASK_SIZE)
+ 		return -ENOMEM;
+@@ -1374,6 +1390,17 @@
+ 	if (flags & MAP_FIXED)
+ 		return addr;
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++	if (current->ethread && (flags & MAP_TOP_DOWN)) {
++		unsigned long old_mmap_base = mm->mmap_base;
++
++		mm->mmap_base = MMAP_TOP_DOWN_BASE;
++		addr = arch_get_unmapped_area_topdown(filp, addr, len, pgoff, flags);
++		mm->mmap_base = old_mmap_base;
++		return addr;
++	}
++#endif
++
+ 	if (addr) {
+ 		addr = PAGE_ALIGN(addr);
+ 		vma = find_vma(mm, addr);
+@@ -1384,7 +1411,11 @@
+ 	if (len > mm->cached_hole_size) {
+ 	        start_addr = addr = mm->free_area_cache;
+ 	} else {
++#ifdef CONFIG_UNIFIED_KERNEL
++	        start_addr = addr = mm->mmap_base;
++#else
+ 	        start_addr = addr = TASK_UNMAPPED_BASE;
++#endif
+ 	        mm->cached_hole_size = 0;
+ 	}
+ 
+@@ -1396,8 +1427,13 @@
+ 			 * Start a new search - just in case we missed
+ 			 * some holes.
+ 			 */
++#ifdef CONFIG_UNIFIED_KERNEL
++			if (start_addr != mm->mmap_base) {
++				addr = mm->mmap_base;
++#else
+ 			if (start_addr != TASK_UNMAPPED_BASE) {
+ 				addr = TASK_UNMAPPED_BASE;
++#endif
+ 			        start_addr = addr;
+ 				mm->cached_hole_size = 0;
+ 				goto full_search;
+@@ -1405,6 +1441,19 @@
+ 			return -ENOMEM;
+ 		}
+ 		if (!vma || addr + len <= vma->vm_start) {
++#ifdef CONFIG_UNIFIED_KERNEL
++			if (current->ethread && (flags & MAP_RESERVE)) {
++				addr = ((addr + RESERVE_PAGE_SIZE - 1) & RESERVE_PAGE_MASK);
++				if (addr + reserved_len > vma->vm_start) {
++					addr = vma->vm_end;
++					if (addr + mm->cached_hole_size < vma->vm_start)
++						mm->cached_hole_size = vma->vm_start - addr;
++					continue;
++				}
++				mm->free_area_cache = addr + reserved_len;
++			}
++			else
++#endif
+ 			/*
+ 			 * Remember the place where we stopped the search:
+ 			 */
+@@ -1423,7 +1472,11 @@
+ 	/*
+ 	 * Is this a new hole at the lowest possible address?
+ 	 */
++#ifdef CONFIG_UNIFIED_KERNEL
++	if (addr >= mm->mmap_base && addr < mm->free_area_cache) {
++#else
+ 	if (addr >= TASK_UNMAPPED_BASE && addr < mm->free_area_cache) {
++#endif
+ 		mm->free_area_cache = addr;
+ 		mm->cached_hole_size = ~0UL;
+ 	}
+@@ -1843,6 +1896,9 @@
+ 	return vma;
+ }
+ #endif
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(find_extend_vma);
++#endif
+ 
+ /*
+  * Ok - we have the memory areas we should free on the vma list,
+diff -urN linux-2.6.34/mm/mprotect.c linux-2.6.34-longene/mm/mprotect.c
+--- linux-2.6.34/mm/mprotect.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/mm/mprotect.c	2010-09-06 10:29:35.261861369 +0800
+@@ -28,6 +28,10 @@
+ #include <asm/cacheflush.h>
+ #include <asm/tlbflush.h>
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++#include <linux/module.h>
++#endif
++
+ #ifndef pgprot_modify
+ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
+ {
+@@ -317,3 +321,6 @@
+ 	up_write(&current->mm->mmap_sem);
+ 	return error;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_mprotect);
++#endif
+diff -urN linux-2.6.34/mm/msync.c linux-2.6.34-longene/mm/msync.c
+--- linux-2.6.34/mm/msync.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/mm/msync.c	2010-09-06 10:29:34.745861313 +0800
+@@ -14,6 +14,10 @@
+ #include <linux/syscalls.h>
+ #include <linux/sched.h>
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++#include <linux/module.h>
++#endif
++
+ /*
+  * MS_SYNC syncs the entire file - including mappings.
+  *
+@@ -101,3 +105,6 @@
+ out:
+ 	return error ? : unmapped_error;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_msync);
++#endif
+diff -urN linux-2.6.34/mm/thrash.c linux-2.6.34-longene/mm/thrash.c
+--- linux-2.6.34/mm/thrash.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/mm/thrash.c	2010-09-06 10:29:35.256068804 +0800
+@@ -22,6 +22,10 @@
+ #include <linux/sched.h>
+ #include <linux/swap.h>
+ 
++#ifdef CONFIG_UNIFIED_KERNEL
++#include <linux/module.h>
++#endif
++
+ static DEFINE_SPINLOCK(swap_token_lock);
+ struct mm_struct *swap_token_mm;
+ static unsigned int global_faults;
+@@ -66,6 +70,9 @@
+ 	mm->last_interval = current_interval;
+ 	spin_unlock(&swap_token_lock);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(grab_swap_token);
++#endif
+ 
+ /* Called on process exit. */
+ void __put_swap_token(struct mm_struct *mm)
+diff -urN linux-2.6.34/net/socket.c linux-2.6.34-longene/net/socket.c
+--- linux-2.6.34/net/socket.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/net/socket.c	2010-09-06 10:31:19.997861341 +0800
+@@ -1327,6 +1327,9 @@
+ 	sock_release(sock);
+ 	return retval;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_socket);
++#endif
+ 
+ /*
+  *	Create a pair of connected sockets.
+@@ -1404,6 +1407,9 @@
+ out:
+ 	return err;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_socketpair);
++#endif
+ 
+ /*
+  *	Bind a name to a socket. Nothing much to do here since it's
+@@ -1553,6 +1559,9 @@
+ {
+ 	return sys_accept4(fd, upeer_sockaddr, upeer_addrlen, 0);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_accept);
++#endif
+ 
+ /*
+  *	Attempt to connect to a socket with the server address.  The address
+@@ -1756,6 +1765,9 @@
+ out:
+ 	return err;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_recvfrom);
++#endif
+ 
+ /*
+  *	Receive a datagram from a socket.
+@@ -1800,6 +1812,9 @@
+ 	}
+ 	return err;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_setsockopt);
++#endif
+ 
+ /*
+  *	Get a socket option. Because we don't know the option lengths we have
+@@ -1831,6 +1846,9 @@
+ 	}
+ 	return err;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_getsockopt);
++#endif
+ 
+ /*
+  *	Shutdown a socket.
+@@ -1850,6 +1868,9 @@
+ 	}
+ 	return err;
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(sys_shutdown);
++#endif
+ 
+ /* A couple of helpful macros for getting the address of the 32/64 bit
+  * fields which are the same type (int / unsigned) on our platforms.
+diff -urN linux-2.6.34/security/security.c linux-2.6.34-longene/security/security.c
+--- linux-2.6.34/security/security.c	2010-05-17 05:17:36.000000000 +0800
++++ linux-2.6.34-longene/security/security.c	2010-09-06 10:26:04.331469022 +0800
+@@ -268,6 +268,9 @@
+ {
+ 	return security_ops->bprm_secureexec(bprm);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(security_bprm_secureexec);
++#endif
+ 
+ int security_sb_alloc(struct super_block *sb)
+ {
+@@ -702,6 +705,9 @@
+ {
+ 	return security_ops->file_lock(file, cmd);
+ }
++#ifdef CONFIG_UNIFIED_KERNEL
++EXPORT_SYMBOL(security_file_lock);
++#endif
+ 
+ int security_file_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
+ {

@@ -1,0 +1,12 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = strmiids
+
+C_SRCS = \
+	strmiids.c
+
+@MAKE_IMPLIB_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

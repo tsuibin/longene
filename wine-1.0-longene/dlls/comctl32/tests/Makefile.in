@@ -1,0 +1,35 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = comctl32.dll
+IMPORTS   = comctl32 ole32 user32 gdi32 advapi32 kernel32
+
+CTESTS = \
+	comboex.c \
+	datetime.c \
+	dpa.c \
+	header.c \
+	imagelist.c \
+	listview.c \
+	misc.c \
+	monthcal.c \
+	mru.c \
+	msg.c \
+	progress.c \
+	propsheet.c \
+	rebar.c \
+	status.c \
+	subclass.c \
+	tab.c \
+	toolbar.c \
+	tooltips.c \
+	trackbar.c \
+	treeview.c \
+	updown.c
+
+RC_SRCS = rsrc.rc
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

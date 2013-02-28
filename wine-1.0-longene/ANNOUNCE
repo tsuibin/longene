@@ -1,0 +1,72 @@
+The Wine team is proud to announce that Wine 1.0 is now available.
+This is the first stable release of Wine after 15 years of development
+and beta testing. Many thanks to everybody who helped us along that
+long road!
+
+While compatibility is not perfect yet, thousands of applications have
+been reported to work very well. Check http://appdb.winehq.org to see
+the details for your favorite applications.
+
+The source is available from the following locations:
+
+  http://ibiblio.org/pub/linux/system/emulators/wine/wine-1.0.tar.bz2
+  http://prdownloads.sourceforge.net/wine/wine-1.0.tar.bz2
+
+Binary packages for various distributions will be available from:
+
+  http://www.winehq.org/site/download
+
+You will find documentation on http://www.winehq.org/site/documentation
+
+You can also get the current source directly from the git
+repository. Check http://www.winehq.org/site/git for details.
+
+Wine is available thanks to the work of many people. See the file
+AUTHORS in the distribution for the complete list.
+
+----------------------------------------------------------------
+
+Bugs fixed in 1.0:
+
+   3838  The Punisher demo crashes after the introduction movies
+   3898  Counter-Strike 1.6 performance issue
+   4755  X Error of failed request:  BadDrawable (X_PolyFillRectangle) when switching to Virtual Desktop
+   6315  Starlancer draws ships as white when direct3d is enabled
+   7268  Oni not opening after install
+   8185  can't login in Skype 3.1 on wine/kubuntu 7
+   8634  antialiasing disabled in gtasa menu
+   9555  Wine crash when I click help in Stata 10
+   9589  Static / Scratchy Sound with OSS in Call of Duty
+   9903  WinRAR with NXServer  - black icons
+  10009  QIP: window z-order is still wrong
+  10268  Robot Wars: Arena of Destruction crashes while quitting (causing resolution to stay 640 x 480)
+  10322  Eve-online (video memory misaddressed?)
+  10700  Dragon Naturally Speaking 9 needs gdiplus.GdipDrawArcI, gdiplus.GdipCreatePen2, ...
+  11011  Call of Duty 1.0 doesn't run after install.
+  11104  Dance Praise 2: Does not respond to input
+  12415  Can not leave fullscreen Warcraft 3x (Regression)
+  12963  Moto Racer 2 works with wine 0.9.60 and crashes with wine 0.9.61
+  13271  The demo of the punisher fails to install
+  13740  winebrowser gets wrong URL, problem with unicode
+
+----------------------------------------------------------------
+
+Changes since 1.0-rc5:
+
+Alexandre Julliard (1):
+      Updated the authors list.
+
+Francois Gouget (3):
+      Remove spaces before '...' in the Danish resources.
+      regedit: Remove spaces before '...'.
+      winecfg: Remove spaces before '...'.
+
+Jaime Rave (1):
+      wineconsole: Update Spanish translation.
+
+Matthias Kupfer (1):
+      wordpad: Small typo fix for German translation.
+
+--
+Alexandre Julliard
+julliard@winehq.org

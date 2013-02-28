@@ -1,0 +1,36 @@
+/*
+ * WineBoot resources
+ *
+ * Copyright (C) 2007 Robert Shearman for CodeWeavers
+ * Copyright (C) 2008 Michael Stefaniuc
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+ *
+ */
+
+LANGUAGE LANG_GERMAN, SUBLANG_NEUTRAL
+
+IDD_ENDTASK DIALOG DISCARDABLE  0, 0, 186, 71
+STYLE DS_MODALFRAME | DS_NOIDLEMSG | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Warten auf Programm"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    DEFPUSHBUTTON   "Abbrechen",IDCANCEL,129,49,50,15
+    PUSHBUTTON      "Programm beenden",IDOK,51,49,71,15
+    LTEXT           "Ein Abmelden oder Herunterfahren wird simuliert, aber dieses Programm reagiert nicht.",
+                    IDC_STATIC,7,7,172,19
+    LTEXT           "Wenn Sie das Programm beenden, können Sie ungespeicherte Daten verlieren.",
+                    IDC_STATIC,7,28,172,19
+END

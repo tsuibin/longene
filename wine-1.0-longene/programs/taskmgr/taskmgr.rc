@@ -1,0 +1,107 @@
+/*
+ *  Task Manager
+ *
+ *  Copyright 1999-2001 Brian Palmer
+ *
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+ */
+
+#include <windef.h>
+#include <winuser.h>
+#include <commctrl.h>
+
+#include "resource.h"
+
+/* Language resources */
+
+#include "Da.rc"
+#include "De.rc"
+#include "En.rc"
+#include "Fr.rc"
+#include "Ja.rc"
+#include "Ko.rc"
+#include "Nl.rc"
+#include "No.rc"
+#include "Pl.rc"
+#include "Si.rc"
+#include "Tr.rc"
+
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+
+/*
+ Icon
+*/
+
+/* Icon with lowest ID value placed first to ensure application icon
+   remains consistent on all systems. */
+/* @makedep: taskmgr.ico */
+IDI_TASKMANAGER         ICON    DISCARDABLE taskmgr.ico
+
+/* @makedep: window.ico */
+IDI_WINDOW              ICON    DISCARDABLE window.ico
+
+/* @makedep: windowsm.ico */
+IDI_WINDOWSM            ICON    DISCARDABLE windowsm.ico
+
+/*
+ Version
+*/
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "Brian Palmer\0"
+            VALUE "FileDescription", "Task Manager by Brian Palmer\0"
+            VALUE "FileVersion", "1.0.0.1\0"
+            VALUE "InternalName", "taskmgr\0"
+            VALUE "LegalCopyright", "Copyright © Brian Palmer 2000\0"
+            VALUE "OriginalFilename", "taskmgr.exe\0"
+            VALUE "ProductName", "Task Manager by Brian Palmer\0"
+            VALUE "ProductVersion", "1.0.0.1\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+/*
+ Bitmap
+*/
+
+/* @makedep: traymask.bmp */
+IDB_TRAYMASK            BITMAP  DISCARDABLE traymask.bmp
+        
+/* @makedep: trayicon.bmp */
+IDB_TRAYICON            BITMAP  DISCARDABLE trayicon.bmp
+
+/* @makedep: font.bmp */
+IDB_FONT                BITMAP  DISCARDABLE font.bmp

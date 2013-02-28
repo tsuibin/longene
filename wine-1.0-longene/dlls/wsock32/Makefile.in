@@ -1,0 +1,18 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = wsock32.dll
+IMPORTLIB = wsock32
+IMPORTS   = mswsock ws2_32 iphlpapi kernel32
+
+C_SRCS = \
+	protocol.c \
+	service.c \
+	socket.c
+
+RC_SRCS = version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

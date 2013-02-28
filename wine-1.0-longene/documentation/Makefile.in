@@ -1,0 +1,26 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = none
+
+INSTALLDIRS = man$(api_manext) html api-guide $(DESTDIR)$(mandir)/man$(api_manext)
+
+@MAKE_RULES@
+
+manpages: man$(api_manext) dummy
+	@cd $(DLLDIR) && $(MAKE) man
+
+htmlpages: html dummy
+	@cd $(DLLDIR) && $(MAKE) doc-html
+
+sgmlpages: api-guide dummy
+	@cd $(DLLDIR) && $(MAKE) doc-sgml
+
+.PHONY: manpages htmlpages sgmlpages
+
+install:: manpages $(DESTDIR)$(mandir)/man$(api_manext)
+	for i in man$(api_manext)/*.$(api_manext); do $(INSTALL_DATA) $$i $(DESTDIR)$(mandir)/$$i; done
+
+clean::
+	$(RM) -r html api-guide man$(api_manext)

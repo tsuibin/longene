@@ -1,0 +1,18 @@
+EXTRADEFS = -D_SPOOL32_
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = winspool.drv
+IMPORTLIB = winspool
+IMPORTS   = user32 gdi32 advapi32 kernel32 ntdll
+
+C_SRCS = \
+	info.c \
+	wspool.c
+
+RC_SRCS = winspool.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

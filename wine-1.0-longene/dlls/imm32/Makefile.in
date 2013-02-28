@@ -1,0 +1,18 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = imm32.dll
+IMPORTLIB = imm32
+IMPORTS   = user32 gdi32 advapi32 kernel32
+
+C_SRCS = \
+	imm.c
+
+RC_SRCS = version.rc
+
+SPEC_SRCS16 = imm.spec
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

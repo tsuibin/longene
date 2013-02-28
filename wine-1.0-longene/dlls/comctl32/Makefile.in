@@ -1,0 +1,52 @@
+EXTRADEFS = -D_COMCTL32_
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = comctl32.dll
+IMPORTLIB = comctl32
+IMPORTS   = user32 gdi32 advapi32 kernel32
+DELAYIMPORTS = winmm uxtheme
+
+C_SRCS = \
+	animate.c \
+	comboex.c \
+	comctl32undoc.c \
+	commctrl.c \
+	datetime.c \
+	dpa.c \
+	draglist.c \
+	dsa.c \
+	flatsb.c \
+	header.c \
+	hotkey.c \
+	imagelist.c \
+	ipaddress.c \
+	listview.c \
+	monthcal.c \
+	nativefont.c \
+	pager.c \
+	progress.c \
+	propsheet.c \
+	rebar.c \
+	smoothscroll.c \
+	status.c \
+	string.c \
+	syslink.c \
+	tab.c \
+	theme_combo.c \
+	theme_dialog.c \
+	theme_edit.c \
+	theme_listbox.c \
+	theming.c \
+	toolbar.c \
+	tooltips.c \
+	trackbar.c \
+	treeview.c \
+	updown.c
+
+RC_SRCS = rsrc.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

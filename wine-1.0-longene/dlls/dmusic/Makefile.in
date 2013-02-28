@@ -1,0 +1,26 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = dmusic.dll
+IMPORTS   = dxguid uuid ole32 user32 advapi32 kernel32
+
+C_SRCS = \
+	buffer.c \
+	clock.c \
+	collection.c \
+	dmusic.c \
+	dmusic_main.c \
+	download.c \
+	downloadedinstrument.c \
+	instrument.c \
+	port.c \
+	portdownload.c \
+	regsvr.c \
+	thru.c
+
+RC_SRCS = version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

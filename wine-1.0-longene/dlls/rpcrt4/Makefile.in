@@ -1,0 +1,35 @@
+EXTRADEFS = -D_RPCRT4_ -DCOM_NO_WINDOWS_H -DMSWMSG
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = rpcrt4.dll
+IMPORTLIB = rpcrt4
+IMPORTS   = uuid iphlpapi advapi32 kernel32 ntdll
+DELAYIMPORTS = secur32 user32
+
+C_SRCS = \
+	cproxy.c \
+	cpsf.c \
+	cstub.c \
+	ndr_clientserver.c \
+	ndr_contexthandle.c \
+	ndr_fullpointer.c \
+	ndr_marshall.c \
+	ndr_ole.c \
+	ndr_stubless.c \
+	rpc_assoc.c \
+	rpc_async.c \
+	rpc_binding.c \
+	rpc_epmap.c \
+	rpc_message.c \
+	rpc_server.c \
+	rpc_transport.c \
+	rpcrt4_main.c \
+	rpcss_np_client.c
+
+RC_SRCS = version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

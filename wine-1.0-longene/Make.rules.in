@@ -1,0 +1,334 @@
+# Global rules shared by all makefiles     -*-Makefile-*-
+#
+# Each individual makefile must define the following variables:
+# TOPSRCDIR    : top-level source directory
+# TOPOBJDIR    : top-level object directory
+# SRCDIR       : source directory for this module
+# MODULE       : name of the module being built
+#
+# Each individual makefile may define the following additional variables:
+# C_SRCS       : C sources for the module
+# C_SRCS16     : 16-bit C sources for the module
+# RC_SRCS      : resource source files
+# EXTRA_SRCS   : extra source files for make depend
+# EXTRA_OBJS   : extra object files
+# IMPORTS      : dlls to import
+# DELAYIMPORTS : dlls to import in delayed mode
+# SUBDIRS      : subdirectories that contain a Makefile
+# EXTRASUBDIRS : subdirectories that do not contain a Makefile
+# INSTALLSUBDIRS : subdirectories to run make install/uninstall into
+# MODCFLAGS    : extra CFLAGS for this module
+
+# First some useful definitions
+
+SHELL     = /bin/sh
+CC        = @CC@
+CFLAGS    = @CFLAGS@
+CPPFLAGS  = @CPPFLAGS@
+LIBS      = @LIBS@
+BISON     = @BISON@
+FLEX      = @FLEX@
+EXEEXT    = @EXEEXT@
+OBJEXT    = @OBJEXT@
+LIBEXT    = @LIBEXT@
+DLLEXT    = @DLLEXT@
+IMPLIBEXT = @IMPLIBEXT@
+LDSHARED  = @LDSHARED@
+DLLTOOL   = @DLLTOOL@
+DLLWRAP   = @DLLWRAP@
+AR        = @AR@
+ARFLAGS   = @ARFLAGS@
+RANLIB    = @RANLIB@
+STRIP     = @STRIP@
+WINDRES   = @WINDRES@
+LN        = @LN@
+LN_S      = @LN_S@
+TOOLSDIR  = @TOOLSDIR@
+AS        = @AS@
+LD        = @LD@
+LDFLAGS   = @LDFLAGS@
+PRELINK   = @PRELINK@
+RM        = rm -f
+MV        = mv
+LINT      = @LINT@
+LINTFLAGS = @LINTFLAGS@
+FONTFORGE = @FONTFORGE@
+RSVG      = @RSVG@
+ICOTOOL   = @ICOTOOL@
+INCLUDES     = -I$(SRCDIR) -I. -I$(TOPSRCDIR)/include -I$(TOPOBJDIR)/include $(EXTRAINCL)
+EXTRACFLAGS  = @EXTRACFLAGS@
+ALLCFLAGS    = $(INCLUDES) $(DEFS) $(DLLFLAGS) $(EXTRACFLAGS) $(CPPFLAGS) $(CFLAGS) $(MODCFLAGS)
+ALLLINTFLAGS = $(INCLUDES) $(DEFS) $(LINTFLAGS)
+IDLFLAGS     = $(INCLUDES) $(DEFS) $(EXTRAIDLFLAGS)
+WINEBUILDFLAGS = $(DLLFLAGS) --as-cmd "$(AS)"
+MKINSTALLDIRS= $(TOPSRCDIR)/tools/mkinstalldirs -m 755
+WINAPI_CHECK = $(TOPSRCDIR)/tools/winapi/winapi_check
+WINEWRAPPER  = $(TOPSRCDIR)/tools/winewrapper
+C2MAN        = $(TOPSRCDIR)/tools/c2man.pl
+RUNTEST      = $(TOPSRCDIR)/tools/runtest
+WINEBUILD    = $(TOOLSDIR)/tools/winebuild/winebuild
+MAKEDEP      = $(TOOLSDIR)/tools/makedep
+MAKECTESTS   = $(TOOLSDIR)/tools/make_ctests
+WRC          = $(TOOLSDIR)/tools/wrc/wrc
+WMC          = $(TOOLSDIR)/tools/wmc/wmc
+WIDL         = $(TOOLSDIR)/tools/widl/widl
+WINEGCC      = $(TOOLSDIR)/tools/winegcc/winegcc
+RELPATH      = $(TOOLSDIR)/tools/relpath
+SFNT2FNT     = $(TOOLSDIR)/tools/sfnt2fnt
+FNT2FON      = $(TOOLSDIR)/tools/fnt2fon
+RC           = $(WRC)
+RC16         = $(WRC)
+RCFLAGS      = --nostdinc $(INCLUDES) $(DEFS) $(EXTRARCFLAGS)
+RC16FLAGS    = -O res16 $(RCFLAGS)
+LDPATH       = @LDPATH@
+DLLDIR       = $(TOPOBJDIR)/dlls
+LIBPORT      = $(TOPOBJDIR)/libs/port/libwine_port.a
+LIBWPP       = $(TOPOBJDIR)/libs/wpp/libwpp.a
+LIBWINE      = -L$(TOPOBJDIR)/libs/wine -lwine
+LDRPATH_INSTALL = @LDRPATH_INSTALL@
+LDRPATH_LOCAL   = @LDRPATH_LOCAL@
+
+@SET_MAKE@
+
+# Installation infos
+
+INSTALL         = @INSTALL@ $(INSTALL_FLAGS)
+INSTALL_PROGRAM = @INSTALL_PROGRAM@ $(INSTALL_PROGRAM_FLAGS)
+INSTALL_SCRIPT  = @INSTALL_SCRIPT@ $(INSTALL_SCRIPT_FLAGS)
+INSTALL_DATA    = @INSTALL_DATA@ $(INSTALL_DATA_FLAGS)
+prefix          = @prefix@
+exec_prefix     = @exec_prefix@
+bindir          = @bindir@
+libdir          = @libdir@
+datarootdir     = @datarootdir@
+datadir         = @datadir@
+infodir         = @infodir@
+mandir          = @mandir@
+sysconfdir      = @sysconfdir@
+includedir      = @includedir@/wine
+dlldir          = @libdir@/wine
+prog_manext     = 1
+api_manext      = 3w
+conf_manext     = 5
+CLEAN_FILES     = *.o *.a *.so *.ln *.res *.$(LIBEXT) \\\#*\\\# *~ *% .\\\#* *.bak *.orig *.rej *.flc core
+
+IDL_GEN_C_SRCS  = $(IDL_C_SRCS:.idl=_c.c) $(IDL_I_SRCS:.idl=_i.c) \
+                  $(IDL_P_SRCS:.idl=_p.c) $(IDL_S_SRCS:.idl=_s.c)
+IDL_GEN_HEADERS = $(IDL_H_SRCS:.idl=.h) $(IDL_C_SRCS:.idl=.h) $(IDL_I_SRCS:.idl=.h) \
+                  $(IDL_P_SRCS:.idl=.h) $(IDL_S_SRCS:.idl=.h)
+
+CLEAN_TARGETS = $(IDL_GEN_C_SRCS) $(IDL_GEN_HEADERS) $(IDL_TLB_SRCS:.idl=.tlb) $(IDL_P_SRCS:%=dlldata.c) \
+                $(BISON_SRCS:.y=.tab.c) $(BISON_SRCS:.y=.tab.h) $(LEX_SRCS:.l=.yy.c) $(MC_SRCS:.mc=.mc.rc)
+
+OBJS = $(C_SRCS:.c=.o) $(BISON_SRCS:.y=.tab.o) $(LEX_SRCS:.l=.yy.o) $(IDL_GEN_C_SRCS:.c=.o) $(EXTRA_OBJS)
+
+RCOBJS = $(RC_SRCS:.rc=.res.o)
+LINTS  = $(C_SRCS:.c=.ln)
+
+# 'all' target first in case the enclosing Makefile didn't define any target
+
+all:
+
+filter: dummy
+	@$(TOPSRCDIR)/tools/winapi/make_filter --make $(MAKE) all
+
+.PHONY: all filter
+
+# Implicit rules
+
+.SUFFIXES: .mc .rc .mc.rc .res .res.o .spec .spec.o .idl .tlb .h .y .l .tab.c .tab.h .yy.c .ok .man.in .man _c.c _i.c _p.c _s.c @MAINTAINER_MODE@ .sfd .ttf .svg .ico
+
+.c.o:
+	$(CC) -c $(ALLCFLAGS) -o $@ $<
+
+.s.o:
+	$(AS) -o $@ $<
+
+.y.tab.c:
+	$(BISON) $(BISONFLAGS) -p $*_ -o $@ $<
+
+.y.tab.h:
+	$(BISON) $(BISONFLAGS) -p $*_ -o $*.tab.c -d $<
+
+.l.yy.c:
+	$(FLEX) $(LEXFLAGS) -o$@ $<
+
+.mc.mc.rc:
+	$(LDPATH) $(WMC) -i -U -H /dev/null -o $@ $<
+
+.rc.res:
+	$(LDPATH) $(RC) $(RCFLAGS) -fo$@ $<
+
+.res.res.o:
+	$(WINDRES) -i $< -o $@
+
+.spec.spec.o:
+	$(WINEBUILD) $(WINEBUILDFLAGS) --dll -o $@ --main-module $(MODULE) --export $<
+
+.idl.h:
+	$(WIDL) $(IDLFLAGS) -h -H $@ $<
+
+.idl_c.c:
+	$(WIDL) $(IDLFLAGS) -c -C $@ $<
+
+.idl_i.c:
+	$(WIDL) $(IDLFLAGS) -u -U $@ $<
+
+.idl_p.c:
+	$(WIDL) $(IDLFLAGS) -p -P $@ $<
+
+.idl_s.c:
+	$(WIDL) $(IDLFLAGS) -s -S $@ $<
+
+.idl.tlb:
+	$(WIDL) $(IDLFLAGS) -t -T $@ $<
+
+.c.ln:
+	$(LINT) -c $(ALLLINTFLAGS) $< || ( $(RM) $@ && exit 1 )
+
+.c.ok:
+	$(RUNTEST) $(RUNTESTFLAGS) $< && touch $@
+
+.sfd.ttf:
+	$(FONTFORGE) -script $(TOPSRCDIR)/fonts/genttf.ff $< $@
+
+.man.in.man:
+	LC_ALL=C sed -e 's,@bindir\@,$(bindir),g' -e 's,@dlldir\@,$(dlldir),g' -e 's,@PACKAGE_STRING\@,@PACKAGE_STRING@,g' $< >$@ || ($(RM) $@ && false)
+
+.svg.ico:
+	$(RSVG) -w 16 -h 16 -f png $< $*-16.png
+	$(RSVG) -w 32 -h 32 -f png $< $*-32.png
+	$(RSVG) -w 48 -h 48 -f png $< $*-48.png
+	$(ICOTOOL) -c -o $@ $*-16.png $*-32.png $*-48.png
+	$(RM) $*-16.png $*-32.png $*-48.png
+
+# Rules for IDL files
+
+dlldata.c: $(WIDL) Makefile.in
+	$(WIDL) $(IDLFLAGS) --dlldata-only --dlldata=$@ $(IDL_P_SRCS)
+
+# Rule for linting
+
+$(MODULE).ln : $(LINTS)
+	if test "$(LINTS)" ; \
+	then \
+		$(LINT) $(ALLLINTFLAGS) -o$(MODULE) $(LINTS) ; \
+	        $(MV) llib-l$(MODULE).ln $(MODULE).ln ; \
+	else \
+		$(LINT) $(ALLLINTFLAGS) -C$(MODULE) /dev/null ; \
+	fi
+
+lint:: $(MODULE).ln
+
+# Rules for Windows API checking
+
+winapi_check:: dummy
+	$(WINAPI_CHECK) $(WINAPI_CHECK_FLAGS) $(WINAPI_CHECK_EXTRA_FLAGS) .
+
+.PHONY: winapi_check
+
+# Rules for dependencies
+
+DEPEND_SRCS = $(C_SRCS) $(C_SRCS16) $(RC_SRCS) $(RC_SRCS16) $(MC_SRCS) \
+              $(IDL_H_SRCS) $(IDL_C_SRCS) $(IDL_I_SRCS) $(IDL_P_SRCS) $(IDL_S_SRCS) \
+              $(IDL_GEN_C_SRCS) $(IDL_TLB_SRCS) $(IDL_TLB_SRCS:.idl=.tlb) \
+              $(BISON_SRCS) $(LEX_SRCS) $(EXTRA_SRCS)
+
+$(SUBDIRS:%=%/__depend__): dummy
+	@cd `dirname $@` && $(MAKE) depend
+
+depend: $(SUBDIRS:%=%/__depend__) dummy
+	$(MAKEDEP) -C$(SRCDIR) -S$(TOPSRCDIR) -T$(TOPOBJDIR) $(EXTRAINCL) $(DEPEND_SRCS)
+
+.PHONY: depend $(SUBDIRS:%=%/__depend__)
+
+# Rules for cleaning
+
+$(SUBDIRS:%=%/__clean__): dummy
+	@cd `dirname $@` && $(MAKE) clean
+
+$(EXTRASUBDIRS:%=%/__clean__): dummy
+	-cd `dirname $@` && $(RM) $(CLEAN_FILES)
+
+clean:: $(SUBDIRS:%=%/__clean__) $(EXTRASUBDIRS:%=%/__clean__)
+	$(RM) $(CLEAN_FILES) $(CLEAN_TARGETS) $(PROGRAMS) $(MANPAGES)
+
+.PHONY: clean $(SUBDIRS:%=%/__clean__) $(EXTRASUBDIRS:%=%/__clean__)
+
+# Rules for installing
+
+$(SUBDIRS:%=%/__install__): dummy
+	@cd `dirname $@` && $(MAKE) install
+
+$(SUBDIRS:%=%/__install-lib__): dummy
+	@cd `dirname $@` && $(MAKE) install-lib
+
+$(SUBDIRS:%=%/__install-dev__): dummy
+	@cd `dirname $@` && $(MAKE) install-dev
+
+$(SUBDIRS:%=%/__uninstall__): dummy
+	@cd `dirname $@` && $(MAKE) uninstall
+
+install:: $(INSTALLSUBDIRS:%=%/__install__)
+
+uninstall:: $(INSTALLSUBDIRS:%=%/__uninstall__)
+
+$(INSTALLDIRS):
+	$(MKINSTALLDIRS) $@
+
+.PHONY: install install-lib install-dev uninstall \
+	$(SUBDIRS:%=%/__install__) $(SUBDIRS:%=%/__uninstall__) \
+	$(SUBDIRS:%=%/__install-lib__) $(SUBDIRS:%=%/__install-dev__)
+
+# Rules for testing
+
+$(TESTSUBDIRS:%=%/__test__): dummy
+	@cd `dirname $@` && $(MAKE) test
+
+$(TESTSUBDIRS:%=%/__crosstest__): dummy
+	@cd `dirname $@` && $(MAKE) crosstest
+
+$(TESTSUBDIRS:%=%/__testclean__): dummy
+	@cd `dirname $@` && $(MAKE) testclean
+
+check test:: $(TESTSUBDIRS:%=%/__test__)
+
+crosstest:: $(TESTSUBDIRS:%=%/__crosstest__)
+
+testclean:: $(TESTSUBDIRS:%=%/__testclean__)
+
+.PHONY: check test testclean crosstest $(TESTSUBDIRS:%=%/__test__) $(TESTSUBDIRS:%=%/__crosstest__) $(TESTSUBDIRS:%=%/__testclean__) 
+
+# Rules for auto documentation
+
+$(DOCSUBDIRS:%=%/__man__): dummy
+	@cd `dirname $@` && $(MAKE) man
+
+$(DOCSUBDIRS:%=%/__doc_html__): dummy
+	@cd `dirname $@` && $(MAKE) doc-html
+
+$(DOCSUBDIRS:%=%/__doc_sgml__): dummy
+	@cd `dirname $@` && $(MAKE) doc-sgml
+
+man: $(DOCSUBDIRS:%=%/__man__)
+doc-html: $(DOCSUBDIRS:%=%/__doc_html__)
+doc-sgml: $(DOCSUBDIRS:%=%/__doc_sgml__)
+
+.PHONY: man doc-html doc-sgml $(DOCSUBDIRS:%=%/__man__) $(DOCSUBDIRS:%=%/__doc_html__) $(DOCSUBDIRS:%=%/__doc_sgml__)
+
+# Misc. rules
+
+$(MC_SRCS:.mc=.mc.rc): $(WMC)
+
+$(IDL_GEN_HEADERS) $(IDL_GEN_C_SRCS) $(IDL_TLB_SRCS:.idl=.tlb): $(WIDL)
+
+$(RC_SRCS:.rc=.res) $(RC_SRCS16:.rc=.res): $(WRC)
+
+$(SUBDIRS): dummy
+	@cd $@ && $(MAKE)
+
+dummy:
+
+.PHONY: dummy $(SUBDIRS)
+
+# End of global rules

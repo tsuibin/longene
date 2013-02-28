@@ -1,0 +1,118 @@
+# Global rules for building dlls     -*-Makefile-*-
+#
+# Each individual makefile should define the following variables:
+# MODULE       : name of the main module being built
+# EXTRALIBS    : extra libraries to link in (optional)
+# SPEC_SRCS16  : interface definition files for 16-bit dlls (optional)
+#
+# plus all variables required by the global Make.rules.in
+#
+
+SLIBDIR     = /lib
+KERNELVER   = `uname -r | awk -F. '{print $$1}'`
+
+DLLFLAGS    = @DLLFLAGS@
+DLLEXT      = @DLLEXT@
+IMPLIBEXT   = @IMPLIBEXT@
+MINGWAR     = @MINGWAR@
+LDRPATH     =
+DEFS        = -D__WINESRC__ $(EXTRADEFS) \
+              -DRUNTIME_LINKER=\"$(SLIBDIR)/ld-linux.so.$(KERNELVER)\" 
+BASEMODULE  = $(MODULE:%.dll=%)
+MAINSPEC    = $(BASEMODULE).spec
+SPEC_DEF    = $(BASEMODULE).def
+WIN16_FILES = $(SPEC_SRCS16:.spec=.spec.o) $(C_SRCS16:.c=.o) $(EXTRA_OBJS16)
+ALL_OBJS    = @WIN16_FILES@ $(OBJS) $(RC_SRCS:.rc=.res)
+ALL_LIBS    = $(EXTRALIBS) $(LIBPORT) $(LDFLAGS) $(LIBS)
+IMPLIB_OBJS = $(IMPLIB_SRCS:.c=.o)
+IMPORTLIBFILE = $(IMPORTLIB:%=lib%.$(IMPLIBEXT))
+STATICIMPLIB  = $(IMPORTLIBFILE:.def=.def.a)
+DLL_LDPATH  = -L$(DLLDIR) $(DELAYIMPORTS:%=-L$(DLLDIR)/%) $(IMPORTS:%=-L$(DLLDIR)/%)
+INSTALLDIRS = $(DESTDIR)$(dlldir) $(DESTDIR)$(datadir)/wine
+
+all: $(MODULE)$(DLLEXT) $(SUBDIRS)
+
+@MAKE_RULES@
+
+# Rules for .so files
+
+$(MODULE).so: $(MAINSPEC) $(ALL_OBJS) Makefile.in
+	$(WINEGCC) -B$(TOOLSDIR)/tools/winebuild -shared $(SRCDIR)/$(MAINSPEC) $(ALL_OBJS) $(EXTRADLLFLAGS) $(LDRPATH) -o $@ $(DELAYIMPORTS:%=-l%) $(IMPORTS:%=-l%) $(DELAYIMPORTS:%=-Wb,-d%) $(ALL_LIBS)
+
+# Rules for .dll files
+
+$(MODULE): $(RCOBJS) $(OBJS) $(SPEC_DEF) Makefile.in
+	$(DLLWRAP) -k --def $(SPEC_DEF) -o $@ $(RCOBJS) $(OBJS) $(DLL_LDPATH) $(DELAYIMPORTS:%=-l%) $(IMPORTS:%=-l%) $(LIBWINE) $(ALL_LIBS)
+
+# Rules for import libraries
+
+.PHONY: implib $(IMPLIB_SRCS:%=__static_implib__%)
+
+all implib: $(IMPORTLIBFILE) $(IMPLIB_SRCS:%=__static_implib__%)
+
+$(IMPLIB_SRCS:%=__static_implib__%): $(STATICIMPLIB)
+
+$(SPEC_DEF) $(IMPORTLIB:%=lib%.def): $(MAINSPEC)
+	$(WINEBUILD) -w --def -o $@ --export $(SRCDIR)/$(MAINSPEC)
+
+$(IMPORTLIB:%=lib%.def.a): $(IMPLIB_OBJS)
+	$(RM) $@
+	$(AR) $(ARFLAGS) $@ $(IMPLIB_OBJS)
+	$(RANLIB) $@
+
+$(IMPORTLIB:%=lib%.a): $(SPEC_DEF) $(IMPLIB_OBJS)
+	$(DLLTOOL) -k -l $@ -d $(SPEC_DEF)
+	$(MINGWAR) rs $@ $(IMPLIB_OBJS)
+
+$(SUBDIRS): implib
+
+# Rules for testing
+
+check test:: $(SUBDIRS:%=%/__test__)
+
+crosstest:: $(SUBDIRS:%=%/__crosstest__)
+
+# Rules for auto documentation
+
+man: $(C_SRCS) dummy
+	$(C2MAN) -o $(TOPOBJDIR)/documentation/man$(api_manext) -R$(TOPOBJDIR) -C$(SRCDIR) -S$(api_manext) $(INCLUDES) $(MAINSPEC:%=-w %) $(SPEC_SRCS16:%=-w %) $(C_SRCS) $(C_SRCS16)
+
+doc-html: $(C_SRCS) dummy
+	$(C2MAN) -o $(TOPOBJDIR)/documentation/html -R$(TOPOBJDIR) -C$(SRCDIR) $(INCLUDES) -Th $(MAINSPEC:%=-w %) $(SPEC_SRCS16:%=-w %) $(C_SRCS) $(C_SRCS16)
+
+doc-sgml: $(C_SRCS) dummy
+	$(C2MAN) -o $(TOPOBJDIR)/documentation/api-guide -R$(TOPOBJDIR) -C$(SRCDIR) $(INCLUDES) -Ts $(MAINSPEC:%=-w %) $(SPEC_SRCS16:%=-w %) $(C_SRCS) $(C_SRCS16)
+
+.PHONY: man doc-html doc-sgml
+
+# Rules for installation
+
+.PHONY: install_static_implib_def install_static_implib_a
+.PHONY: $(IMPORTLIB:%=_install_/%) $(IMPLIB_SRCS:%=_install_static_implib_/%)
+
+$(IMPORTLIB:%=_install_/%): $(IMPORTLIBFILE) $(DESTDIR)$(dlldir) dummy
+	$(INSTALL_DATA) $(IMPORTLIBFILE) $(DESTDIR)$(dlldir)/$(IMPORTLIBFILE)
+
+install_static_implib_def: $(STATICIMPLIB) $(DESTDIR)$(dlldir) dummy
+	$(INSTALL_DATA) $(STATICIMPLIB) $(DESTDIR)$(dlldir)/$(STATICIMPLIB)
+
+install_static_implib_a:
+
+$(IMPLIB_SRCS:%=_install_static_implib_/%): install_static_implib_$(IMPLIBEXT)
+
+install install-lib:: $(MODULE)$(DLLEXT) $(DESTDIR)$(dlldir) dummy
+	$(INSTALL_PROGRAM) $(MODULE)$(DLLEXT) $(DESTDIR)$(dlldir)/$(MODULE)$(DLLEXT)
+
+install install-dev:: $(IMPORTLIB:%=_install_/%) $(IMPLIB_SRCS:%=_install_static_implib_/%)
+
+uninstall::
+	-cd $(DESTDIR)$(dlldir) && $(RM) $(MODULE)$(DLLEXT) $(IMPORTLIBFILE) $(STATICIMPLIB)
+
+# Misc. rules
+
+clean::
+	$(RM) $(SPEC_DEF) $(IMPORTLIBFILE)
+
+$(SPEC_DEF) $(SPEC_SRCS16:.spec=.spec.o): $(WINEBUILD)
+
+# End of global dll rules

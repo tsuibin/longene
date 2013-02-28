@@ -1,0 +1,23 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = msvfw32.dll
+IMPORTLIB = msvfw32
+IMPORTS   = winmm version comctl32 user32 gdi32 advapi32 kernel32 ntdll
+
+C_SRCS = \
+	mciwnd.c \
+	msvideo_main.c \
+	drawdib.c
+
+C_SRCS16 = \
+	msvideo16.c
+
+SPEC_SRCS16 = msvideo.spec
+
+RC_SRCS = rsrc.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

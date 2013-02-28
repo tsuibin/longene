@@ -1,0 +1,18 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = d3d8.dll
+IMPORTS   = dxerr8 uuid dxguid user32 kernel32
+
+CTESTS = \
+	d3d8_main.c \
+	device.c \
+	surface.c \
+	texture.c \
+	visual.c \
+	volume.c
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

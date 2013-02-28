@@ -1,0 +1,20 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = browseui.dll
+IMPORTS   = uuid ole32 user32 advapi32 kernel32
+EXTRADEFS = -DCOM_NO_WINDOWS_H
+
+C_SRCS = \
+	aclmulti.c \
+	browseui_main.c \
+	compcatcachedaemon.c \
+	progressdlg.c \
+	regsvr.c
+
+RC_SRCS = rsrc.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

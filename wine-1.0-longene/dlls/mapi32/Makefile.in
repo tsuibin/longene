@@ -1,0 +1,18 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = mapi32.dll
+IMPORTLIB = mapi32
+IMPORTS   = uuid shlwapi shell32 kernel32
+
+C_SRCS = \
+	imalloc.c \
+	mapi32_main.c \
+	prop.c \
+	sendmail.c \
+	util.c
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

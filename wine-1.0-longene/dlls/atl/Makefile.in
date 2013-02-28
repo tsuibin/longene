@@ -1,0 +1,21 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = atl.dll
+IMPORTLIB = atl
+IMPORTS   = uuid ole32 oleaut32 user32 gdi32 advapi32 kernel32
+
+C_SRCS = \
+	atl_ax.c \
+	atl_main.c \
+	registrar.c
+
+RC_SRCS = rsrc.rc
+
+IDL_H_SRCS = \
+	atliface.idl
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

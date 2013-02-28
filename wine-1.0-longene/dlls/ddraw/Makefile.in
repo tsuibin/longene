@@ -1,0 +1,34 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = ddraw.dll
+IMPORTLIB = ddraw
+IMPORTS   = dxguid uuid ole32 user32 gdi32 advapi32 kernel32 ntdll
+
+C_SRCS = \
+	clipper.c \
+	ddraw.c \
+	ddraw_thunks.c \
+	device.c \
+	direct3d.c \
+	executebuffer.c \
+	gamma.c \
+	light.c \
+	main.c \
+	material.c \
+	palette.c \
+	parent.c \
+	regsvr.c \
+	surface.c \
+	surface_thunks.c \
+	texture.c \
+	utils.c \
+	vertexbuffer.c \
+	viewport.c
+
+RC_SRCS = version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

@@ -1,0 +1,63 @@
+# Global rules for building a Winelib program     -*-Makefile-*-
+#
+# Each individual makefile should define the following variables:
+# MODULE       : name of the main module being built
+# APPMODE      : program mode (-mwindows,-mconsole)
+# EXTRALIBS    : extra libraries to link in (optional)
+# EXTRADEFS    : extra symbol definitions, like -DWINELIB (optional)
+#
+# plus all variables required by the global Make.rules.in
+#
+
+DLLFLAGS    = @DLLFLAGS@
+DEFS        = $(EXTRADEFS) 
+ALL_LIBS    = $(DELAYIMPORTS:%=-l%) $(IMPORTS:%=-l%) $(EXTRALIBS) $(LIBPORT) $(LDFLAGS) $(LIBS)
+BASEMODULE  = $(MODULE:.exe=)
+RUNTESTFLAGS= -q -P wine -T $(TOPOBJDIR)
+INSTALLDIRS = $(DESTDIR)$(bindir) $(DESTDIR)$(dlldir) $(DESTDIR)$(mandir)/man$(prog_manext)
+
+@MAKE_RULES@
+
+all: $(MODULE)$(DLLEXT) $(BASEMODULE)$(EXEEXT)
+
+# Rules for .so main module
+
+$(MODULE).so: $(OBJS) $(RC_SRCS:.rc=.res) Makefile.in
+	$(WINEGCC) -B$(TOOLSDIR)/tools/winebuild $(APPMODE) $(OBJS) $(RC_SRCS:.rc=.res) -o $@ $(ALL_LIBS) $(DELAYIMPORTS:%=-Wb,-d%)
+
+$(BASEMODULE): $(WINEWRAPPER)
+	$(RM) $@ && $(LN_S) $(WINEWRAPPER) $@
+
+# Rules for .exe main module
+
+$(MODULE): $(OBJS) $(RCOBJS) Makefile.in
+	$(CC) $(APPMODE) $(OBJS) $(RCOBJS) -o $@ -L$(DLLDIR) $(IMPORTS:%=-L$(DLLDIR)/%) $(DELAYIMPORTS:%=-L$(DLLDIR)/%) $(LIBWINE) $(ALL_LIBS)
+
+# Rules for testing
+
+check test:: $(SUBDIRS:%=%/__test__)
+
+$(TESTRESULTS): $(MODULE)$(DLLEXT)
+
+# Rules for installation
+
+.PHONY: install_prog install_prog.so uninstall_prog uninstall_prog.so
+
+install_prog.so: $(MODULE).so $(DESTDIR)$(dlldir) dummy
+	$(INSTALL_PROGRAM) $(MODULE).so $(DESTDIR)$(dlldir)/$(MODULE).so
+
+install_prog: $(MODULE) $(DESTDIR)$(bindir) dummy
+	$(INSTALL_PROGRAM) $(MODULE) $(DESTDIR)$(bindir)/$(MODULE)
+
+uninstall_prog.so: dummy
+	$(RM) $(DESTDIR)$(dlldir)/$(MODULE).so
+
+uninstall_prog: dummy
+	$(RM) $(DESTDIR)$(bindir)/$(MODULE)
+
+install:: install_prog$(DLLEXT)
+
+uninstall:: uninstall_prog$(DLLEXT)
+
+clean::
+	$(RM) $(BASEMODULE) $(MODULE)

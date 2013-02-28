@@ -1,0 +1,20 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = winemine.exe
+APPMODE   = -mwindows
+IMPORTS   = user32 gdi32 advapi32 kernel32
+DELAYIMPORTS = shell32
+
+C_SRCS = \
+        dialog.c \
+	main.c
+
+RC_SRCS = rsrc.rc
+
+SVG_SRCS = winemine.svg
+
+@MAKE_PROG_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

@@ -1,0 +1,30 @@
+EXTRADEFS = -D_WINX32_
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = wininet.dll
+IMPORTLIB = wininet
+IMPORTS   = mpr shlwapi shell32 user32 advapi32 kernel32 ntdll
+DELAYIMPORTS = secur32 crypt32
+EXTRALIBS = @SOCKETLIBS@
+
+C_SRCS = \
+	cookie.c \
+	dialogs.c \
+	ftp.c \
+	gopher.c \
+	http.c \
+	internet.c \
+	netconnection.c \
+	urlcache.c \
+	utility.c \
+	wininet_main.c
+
+RC_SRCS = \
+	rsrc.rc \
+	version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

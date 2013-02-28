@@ -1,0 +1,100 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+EXEEXT    = @EXEEXT@
+MODULE    = none
+EXTRAINCL = @FREETYPEINCL@
+FREETYPELIBS = @FREETYPELIBS@
+
+PROGRAMS = \
+	fnt2bdf$(EXEEXT) \
+	fnt2fon$(EXEEXT) \
+	make_ctests$(EXEEXT) \
+	makedep$(EXEEXT) \
+	relpath$(EXEEXT) \
+	sfnt2fnt$(EXEEXT) \
+	wine.inf \
+	wineprefixcreate
+
+MANPAGES = \
+	winemaker.man \
+	wineprefixcreate.man
+
+C_SRCS = \
+	fnt2bdf.c \
+	fnt2fon.c \
+	make_ctests.c \
+	makedep.c \
+	relpath.c \
+	sfnt2fnt.c \
+
+INSTALLSUBDIRS = \
+	widl \
+	winebuild \
+	winedump \
+	winegcc \
+	wmc \
+	wrc
+
+SUBDIRS = $(INSTALLSUBDIRS)
+
+EXTRASUBDIRS = winapi
+
+INSTALLDIRS = \
+	$(DESTDIR)$(bindir) \
+	$(DESTDIR)$(datadir)/applications \
+	$(DESTDIR)$(datadir)/wine \
+	$(DESTDIR)$(mandir)/man$(prog_manext)
+
+UPDATE_DESKTOP_DATABASE = update-desktop-database
+
+all: $(PROGRAMS) $(MANPAGES) $(SUBDIRS)
+
+@MAKE_RULES@
+
+makedep$(EXEEXT) $(EXEEXT:%=makedep): makedep.o
+	$(CC) $(CFLAGS) -o $@ makedep.o $(LDFLAGS)
+
+make_ctests$(EXEEXT): make_ctests.o
+	$(CC) $(CFLAGS) -o $@ make_ctests.o $(LDFLAGS)
+
+fnt2bdf$(EXEEXT): fnt2bdf.o
+	$(CC) $(CFLAGS) -o $@ fnt2bdf.o $(LIBPORT) $(LDFLAGS)
+
+fnt2fon$(EXEEXT): fnt2fon.o
+	$(CC) $(CFLAGS) -o $@ fnt2fon.o $(LIBPORT) $(LDFLAGS)
+
+relpath$(EXEEXT): relpath.o
+	$(CC) $(CFLAGS) -o $@ relpath.o $(LIBPORT) $(LDFLAGS)
+
+sfnt2fnt$(EXEEXT): sfnt2fnt.o relpath$(EXEEXT)
+	$(CC) $(CFLAGS) -o $@ sfnt2fnt.o $(LIBWINE) $(LIBPORT) $(LDFLAGS) $(FREETYPELIBS) $(LDRPATH_LOCAL)
+
+wine.inf: wine.inf.in
+	LC_ALL=C sed -e 's,@PACKAGE_STRING\@,@PACKAGE_STRING@,g' $(SRCDIR)/wine.inf.in >$@ || ($(RM) $@ && false)
+
+wineprefixcreate: wineprefixcreate.in relpath$(EXEEXT)
+	sed -e "s,@bintodlldir\@,`$(RELPATH) $(bindir) $(dlldir)`,g" -e "s,@bintodatadir\@,`$(RELPATH) $(bindir) $(datadir)/wine`,g" $(SRCDIR)/wineprefixcreate.in >$@ || ($(RM) $@ && false)
+	chmod +x wineprefixcreate
+
+install install-lib:: wine.inf wineprefixcreate $(INSTALLDIRS)
+	$(INSTALL_SCRIPT) wineprefixcreate $(DESTDIR)$(bindir)/wineprefixcreate
+	$(INSTALL_DATA) wine.inf $(DESTDIR)$(datadir)/wine/wine.inf
+	$(INSTALL_DATA) $(SRCDIR)/wine.desktop $(DESTDIR)$(datadir)/applications/wine.desktop
+	$(INSTALL_DATA) wineprefixcreate.man $(DESTDIR)$(mandir)/man$(prog_manext)/wineprefixcreate.$(prog_manext)
+	-$(UPDATE_DESKTOP_DATABASE)
+
+install install-dev:: $(INSTALLSUBDIRS:%=%/__install__) $(DESTDIR)$(bindir) $(DESTDIR)$(mandir)/man$(prog_manext)
+	$(INSTALL_SCRIPT) $(SRCDIR)/winemaker $(DESTDIR)$(bindir)/winemaker
+	$(INSTALL_DATA) winemaker.man $(DESTDIR)$(mandir)/man$(prog_manext)/winemaker.$(prog_manext)
+
+uninstall::
+	$(RM) $(DESTDIR)$(bindir)/winemaker $(DESTDIR)$(bindir)/wineprefixcreate $(DESTDIR)$(mandir)/man$(prog_manext)/winemaker.$(prog_manext) $(DESTDIR)$(mandir)/man$(prog_manext)/wineprefixcreate.$(prog_manext) $(DESTDIR)$(datadir)/wine/wine.inf $(DESTDIR)$(datadir)/applications/wine.desktop
+	-$(UPDATE_DESKTOP_DATABASE)
+
+wmc wrc: relpath$(EXEEXT)
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend
+
+Makefile: makedep$(EXEEXT)

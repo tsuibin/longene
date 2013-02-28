@@ -1,0 +1,20 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = mountmgr.sys
+IMPORTS   = uuid advapi32 ntoskrnl.exe kernel32 ntdll
+DELAYIMPORTS = user32
+EXTRADLLFLAGS = -Wb,--subsystem,native
+EXTRADEFS = @HALINCL@
+EXTRALIBS = @DISKARBITRATIONLIB@
+
+C_SRCS = \
+	device.c \
+	diskarb.c \
+	hal.c \
+	mountmgr.c
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

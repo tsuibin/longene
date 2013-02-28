@@ -1,0 +1,15 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = qedit.dll
+IMPORTS   = strmiids uuid oleaut32 ole32 kernel32
+
+CTESTS = \
+	mediadet.c
+
+RC_SRCS = qedit.rc
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

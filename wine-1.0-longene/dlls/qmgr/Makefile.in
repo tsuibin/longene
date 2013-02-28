@@ -1,0 +1,24 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = qmgr.dll
+IMPORTS   = uuid wininet urlmon ole32 advapi32 kernel32
+
+C_SRCS = \
+	enum_files.c \
+	enum_jobs.c \
+	factory.c \
+	file.c \
+	job.c \
+	qmgr.c \
+	qmgr_main.c \
+	service.c
+
+RC_SRCS = rsrc.rc
+
+IDL_I_SRCS = qmgr_local.idl
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

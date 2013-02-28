@@ -1,0 +1,22 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = rpcrt4.dll
+IMPORTS   = uuid ole32 rpcrt4 kernel32
+EXTRAIDLFLAGS = --prefix-server=s_
+
+IDL_C_SRCS = server.idl
+IDL_S_SRCS = server.idl
+
+CTESTS = \
+	cstub.c \
+	generated.c \
+	ndr_marshall.c \
+	rpc.c \
+	rpc_async.c \
+	server.c
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

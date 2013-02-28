@@ -1,0 +1,22 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = mscms.dll
+IMPORTLIB = mscms
+IMPORTS   = advapi32 kernel32
+EXTRALIBS = @LCMSLIBS@
+
+C_SRCS = \
+	handle.c \
+	icc.c \
+	mscms_main.c \
+	profile.c \
+	stub.c \
+	transform.c
+
+RC_SRCS = version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

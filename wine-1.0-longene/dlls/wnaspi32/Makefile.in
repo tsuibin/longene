@@ -1,0 +1,20 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = wnaspi32.dll
+IMPORTLIB = wnaspi32
+IMPORTS   = advapi32 kernel32
+
+C_SRCS = \
+	aspi.c \
+	winaspi32.c
+
+C_SRCS16 = \
+	winaspi16.c
+
+SPEC_SRCS16 = winaspi.spec
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

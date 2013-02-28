@@ -1,0 +1,23 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = version.dll
+IMPORTLIB = version
+IMPORTS   = lz32 kernel32 ntdll
+
+C_SRCS = \
+	info.c \
+	install.c \
+	resource.c
+
+RC_SRCS = version.rc
+
+C_SRCS16 = \
+	ver16.c
+
+SPEC_SRCS16 = ver.spec
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

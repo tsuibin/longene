@@ -1,0 +1,16 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = dinput.dll
+IMPORTS   = dxguid uuid dxerr8 dinput ole32 version user32 kernel32
+
+CTESTS = \
+	device.c \
+	joystick.c \
+	keyboard.c \
+	mouse.c
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

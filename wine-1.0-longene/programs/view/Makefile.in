@@ -1,0 +1,18 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = view.exe
+APPMODE   = -mwindows
+IMPORTS   = comdlg32 user32 gdi32 kernel32
+
+C_SRCS = \
+	init.c \
+	view.c \
+	winmain.c
+
+RC_SRCS = viewrc.rc
+
+@MAKE_PROG_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

@@ -1,0 +1,20 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = dmcompos.dll
+IMPORTS   = dxguid uuid ole32 user32 advapi32 kernel32
+
+C_SRCS = \
+	chordmap.c \
+	chordmaptrack.c \
+	composer.c \
+	dmcompos_main.c \
+	regsvr.c \
+	signposttrack.c
+
+RC_SRCS = version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

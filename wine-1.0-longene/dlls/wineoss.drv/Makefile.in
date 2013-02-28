@@ -1,0 +1,20 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = wineoss.drv
+IMPORTS   = dxguid uuid winmm user32 kernel32
+
+C_SRCS = \
+	audio.c \
+	dscapture.c \
+	dsrender.c \
+	midi.c \
+	midipatch.c \
+	mixer.c \
+	mmaux.c \
+	oss.c
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

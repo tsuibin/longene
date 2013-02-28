@@ -1,0 +1,142 @@
+Quick start
+===========
+Install Longene, you have 3 steps to go:
+1. Build the patched Linux kernel
+2. Build Wine-For-Longene, without wineserver
+3. Build Longene module
+
+
+Provides
+========
+A patch for linux-2.6.34 kernel
+Wine-For-Longene source
+Longene-0.3.1 module
+
+Requirements
+============
+Linux-2.6.34 source
+
+The current version (0.3.1) of Longene provides a patche for Linux kernel.
+
+Make sure your system has installed the X11 development include files 
+(called xlib6g-dev in Debian and XFree86-devel in Red Hat). 
+
+Make sure your system has at least gcc 3.2 available which Linux kernel 2.6.34
+requires.
+
+
+Build Linux kernel
+==================
+To build Longene, the first thing is to patch the Linux kernel 2.6.34.
+Cd to top-level directory of the kernel source code (linux-2.6.34),
+and run the following command:
+
+  patch -p1 < path/patchfile
+
+where "patchfile" is "longene-0.3.1-linux-2.6.34.diff" and "path" is path
+of the patchfile.
+
+Both the kernel code and the general configuration (.config) are automatically
+motified in this step.
+
+After patching the kernel, configure it like:
+  
+  make menuconfig
+
+The general configuration file (.config) is provided in the patch (you can also
+configure it yourself), you can just save and exit to run the next 
+commands:
+
+  make
+  make modules_install
+  make install
+
+Now you have a patched Linux kernel for Longene, then reboot your system to 
+build the Longene module.
+
+NOTE: If you decide to configure the patched kernel yourself, 
+      the following settings are required:
+      Need to change the version number.:
+      General setup -> Local version  -> -longene-0.3.1
+      
+      Features tobe included:
+      1. [*] General setup -> Longene support
+      2. -*- General setup -> 
+             Configure standard kernel features (for small systems) -> 
+             Load all symbols for debugging/ksymoops
+      3. [*] General setup -> 
+             Configure standard kernel features (for small systems) -> 
+             Do an extra kallsyms pass
+      4. [*] General setup -> Disable heap randomization
+      5. [*] File systems -> Native language support -> 
+             Simplified Chinese charset (CP936, GB2312)
+
+      Features tobe Excluded:
+      1. [ ] Enable loadable module support -> 
+             Module versioning support
+      2. [ ] Processor type and features -> 
+             Symmetric multi-processing support
+
+
+Build Wine
+==========
+To build Wine, cd to the top-level directory of the Wine for Longene
+source (wine-1.0-longene), then configure and build it:
+
+  ./configure
+  make depend
+  make
+  make install
+
+
+Build Longene module
+=================================
+To build the module, you need to make sure you are using the patched
+kernel you have built. Then, cd to the "module" directory and run 
+the command:
+
+  make
+
+After building, install the module to get the Longene running:
+
+  insmod unifiedkernel.ko
+
+All done, Longene is running!
+
+
+Run programs
+================
+Now you can run some Win32 programs in X terminal windows just like what 
+you do on Linux, such as:
+
+  ./Hellworld.exe
+
+Note that Longene is not completed yet, so some applications may crash the
+system or not work properly as on Microsoft Windows. You can report these
+bugs on :
+
+  http://www.longene.org/bugzilla
+
+
+UNINSTALL
+=========
+If you don't want to use Longene any more, you can uninstall it:
+
+1. Uninstall module:
+  
+  rmmod unifiedkernel.ko
+
+cd to the directory "module" and run command:
+  
+  make clean
+
+2. If you want, you can also unpatch Linux kernel:
+cd to the top-level directory of the kernel source code, then run the 
+command:
+
+  patch -R -p1 < path/patchfile
+
+as usual, where "path" is the path of the patch file and "patchfile" is 
+its file name. 
+
+And then, you can rebuild them.

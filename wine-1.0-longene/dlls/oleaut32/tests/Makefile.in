@@ -1,0 +1,29 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = oleaut32.dll
+IMPORTS   = uuid oleaut32 ole32 rpcrt4 user32 gdi32 advapi32 kernel32
+
+CTESTS = \
+	olefont.c \
+	olepicture.c \
+	safearray.c \
+	tmarshal.c \
+	typelib.c \
+	usrmarshal.c \
+	varformat.c \
+	vartest.c \
+	vartype.c
+
+RC_SRCS = tmarshal.rc
+
+IDL_I_SRCS = tmarshal.idl
+
+IDL_TLB_SRCS = \
+	test_tlb.idl \
+	tmarshal.idl
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

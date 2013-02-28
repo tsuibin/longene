@@ -1,0 +1,11 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = cfgmgr32.dll
+IMPORTLIB = cfgmgr32
+IMPORTS   = setupapi kernel32
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

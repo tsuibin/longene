@@ -1,0 +1,17 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = mshtml.dll
+IMPORTS   = uuid ole32 oleaut32 user32 urlmon advapi32 kernel32
+
+CTESTS = \
+	dom.c \
+	htmldoc.c \
+	misc.c \
+	protocol.c \
+	script.c
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

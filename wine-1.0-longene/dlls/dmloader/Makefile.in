@@ -1,0 +1,21 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = dmloader.dll
+IMPORTS   = dxguid uuid ole32 user32 advapi32 kernel32
+
+C_SRCS = \
+	classfactory.c \
+	container.c \
+	debug.c \
+	dmloader_main.c \
+	loader.c \
+	loaderstream.c \
+	regsvr.c
+
+RC_SRCS = version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

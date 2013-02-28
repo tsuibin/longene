@@ -1,0 +1,34 @@
+EXTRADEFS = -D_ADVAPI32_
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = advapi32.dll
+IMPORTLIB = advapi32
+IMPORTS   = kernel32 ntdll
+EXTRALIBS = @SECURITYLIB@
+DELAYIMPORTS = rpcrt4
+
+C_SRCS = \
+	advapi.c \
+	cred.c \
+	crypt.c \
+	crypt_arc4.c \
+	crypt_des.c \
+	crypt_lmhash.c \
+	crypt_md4.c \
+	crypt_md5.c \
+	crypt_sha.c \
+	eventlog.c \
+	lsa.c \
+	registry.c \
+	security.c \
+	service.c
+
+IDL_C_SRCS = svcctl.idl
+
+RC_SRCS = version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

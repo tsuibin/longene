@@ -1,0 +1,19 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = winecoreaudio.drv
+IMPORTS   = uuid winmm user32 kernel32
+EXTRALIBS = @COREAUDIO@
+
+C_SRCS = \
+	audio.c \
+	audiounit.c \
+	coreaudio.c \
+	coremidi.c \
+	midi.c \
+	mixer.c
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

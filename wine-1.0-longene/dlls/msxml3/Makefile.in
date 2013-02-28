@@ -1,0 +1,42 @@
+EXTRADEFS = -DCOM_NO_WINDOWS_H
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = msxml3.dll
+IMPORTS   = uuid urlmon shlwapi oleaut32 ole32 user32 advapi32 kernel32
+EXTRALIBS = @XML2LIBS@ @XSLTLIBS@
+EXTRAINCL = @XML2INCL@ @XSLTINCL@
+
+C_SRCS = \
+	attribute.c \
+	cdata.c \
+	comment.c \
+	docfrag.c \
+	domdoc.c \
+	domimpl.c \
+	element.c \
+	entityref.c \
+	factory.c \
+	main.c \
+	node.c \
+	nodelist.c \
+	nodemap.c \
+	parseerror.c \
+	pi.c \
+	queryresult.c \
+	regsvr.c \
+	saxreader.c \
+	schema.c \
+	text.c \
+	uuid.c \
+	xmldoc.c \
+	xmlelem.c
+
+RC_SRCS = version.rc
+
+IDL_TLB_SRCS = msxml3_v1.idl
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

@@ -1,0 +1,26 @@
+EXTRADEFS = -DCOM_NO_WINDOWS_H
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = rsaenh.dll
+IMPORTLIB = rsaenh
+IMPORTS   = crypt32 advapi32 kernel32
+
+C_SRCS = \
+	aes.c \
+	des.c \
+	handle.c \
+	implglue.c \
+	md2.c \
+	mpi.c \
+	rc2.c \
+	rc4.c \
+	rsa.c \
+	rsaenh.c
+
+RC_SRCS = version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

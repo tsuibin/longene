@@ -1,0 +1,30 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = ntdll.dll
+IMPORTS   = kernel32
+
+CTESTS = \
+	atom.c \
+	change.c \
+	env.c \
+	error.c \
+	exception.c \
+	generated.c \
+	info.c \
+	large_int.c \
+	file.c \
+	om.c \
+	path.c \
+	port.c \
+	reg.c \
+	rtl.c \
+	rtlbitmap.c \
+	rtlstr.c \
+	string.c \
+	time.c
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

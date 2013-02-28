@@ -1,0 +1,16 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = msxml3.dll
+IMPORTS   = uuid oleaut32 ole32 user32 kernel32
+
+CTESTS = \
+	domdoc.c \
+	schema.c \
+	xmldoc.c \
+	xmlelem.c
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

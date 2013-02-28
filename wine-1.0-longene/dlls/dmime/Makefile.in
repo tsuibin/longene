@@ -1,0 +1,33 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = dmime.dll
+IMPORTS   = dxguid uuid dsound ole32 user32 advapi32 kernel32
+
+C_SRCS = \
+	audiopath.c \
+	dmime_main.c \
+	dmutils.c \
+	graph.c \
+	lyricstrack.c \
+	markertrack.c \
+	paramcontroltrack.c \
+	patterntrack.c \
+	performance.c \
+	regsvr.c \
+	segment.c \
+	segmentstate.c \
+	segtriggertrack.c \
+	seqtrack.c \
+	sysextrack.c \
+	tempotrack.c \
+	timesigtrack.c \
+	tool.c \
+	wavetrack.c
+
+RC_SRCS = version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

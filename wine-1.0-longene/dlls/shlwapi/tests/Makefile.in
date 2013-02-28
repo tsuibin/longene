@@ -1,0 +1,21 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = shlwapi.dll
+IMPORTS   = uuid shlwapi advapi32 ole32 oleaut32 kernel32
+
+CTESTS = \
+	clist.c \
+	clsid.c \
+	generated.c \
+	istream.c \
+	ordinal.c \
+	path.c \
+	shreg.c \
+	string.c \
+	url.c
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

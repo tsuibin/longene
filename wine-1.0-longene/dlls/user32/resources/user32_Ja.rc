@@ -1,0 +1,67 @@
+/*
+ * Copyright 2000 Junichi Kuchinishi
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+ */
+
+LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
+
+SYSMENU MENU LOADONCALL MOVEABLE DISCARDABLE
+{
+ MENUITEM "元のサイズに戻す(&R)", 61728
+ MENUITEM "移動(&M)", 61456
+ MENUITEM "サイズ変更(&S)", 61440
+ MENUITEM "アイコン化(&N)", 61472
+ MENUITEM "最大表\示(&X)", 61488
+ MENUITEM SEPARATOR
+ MENUITEM "閉じる(&C)\tAlt-F4", 61536
+ MENUITEM SEPARATOR
+ MENUITEM "アプリケーションの切り替え(&W)...\tCtrl-Esc", 61744
+ MENUITEM SEPARATOR
+ MENUITEM "Wineについて(&A)...", 61761
+}
+
+EDITMENU MENU LOADONCALL MOVEABLE DISCARDABLE
+{
+        POPUP ""
+        BEGIN
+                MENUITEM "元に戻す(&U)", EM_UNDO
+                MENUITEM SEPARATOR
+                MENUITEM "切り取り(&T)", WM_CUT
+                MENUITEM "コピー(&C)", WM_COPY
+                MENUITEM "貼\り付け(&P)", WM_PASTE
+                MENUITEM "削除(&D)", WM_CLEAR
+                MENUITEM SEPARATOR
+                MENUITEM "選択(&A)", EM_SETSEL
+        END
+}
+
+MSGBOX DIALOG 100, 80, 216, 168
+STYLE DS_MODALFRAME | DS_NOIDLEMSG | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "MS UI Gothic"
+BEGIN
+        ICON "", 1088, 8, 20, 16, 16, WS_CHILD | WS_VISIBLE
+        LTEXT "", 100, 32, 4, 176, 48, WS_CHILD | WS_VISIBLE | WS_GROUP | SS_NOPREFIX
+        PUSHBUTTON "OK", 1, 16, 56, 40, 14, WS_CHILD | WS_VISIBLE | WS_TABSTOP
+        PUSHBUTTON "ｷｬﾝｾﾙ", 2, 64, 56, 40, 14, WS_CHILD | WS_VISIBLE | WS_TABSTOP
+        PUSHBUTTON "中止(&A)", 3, 112, 56, 40, 14, WS_CHILD | WS_VISIBLE | WS_TABSTOP
+        PUSHBUTTON "再試行(&R)", 4, 160, 56, 40, 14, WS_CHILD | WS_VISIBLE | WS_TABSTOP
+        PUSHBUTTON "無視(&I)", 5, 208, 56, 40, 14, WS_CHILD | WS_VISIBLE | WS_TABSTOP
+        PUSHBUTTON "はい(&Y)", 6, 256, 56, 40, 14, WS_CHILD | WS_VISIBLE | WS_TABSTOP
+        PUSHBUTTON "いいえ(&N)", 7, 304, 56, 40, 14, WS_CHILD | WS_VISIBLE | WS_TABSTOP
+        PUSHBUTTON "&Try Again", 10, 352, 56, 40, 14, WS_CHILD | WS_VISIBLE | WS_TABSTOP
+        PUSHBUTTON "&Continue", 11, 400, 56, 40, 14, WS_CHILD | WS_VISIBLE | WS_TABSTOP
+        PUSHBUTTON "Help", 9, 448, 56, 40, 14, WS_CHILD | WS_VISIBLE | WS_TABSTOP
+END

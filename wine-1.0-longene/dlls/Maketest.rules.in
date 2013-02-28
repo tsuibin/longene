@@ -1,0 +1,79 @@
+# Global rules for building dll unit tests     -*-Makefile-*-
+#
+# Each individual makefile should define the following variables:
+# TESTDLL      : the dll to test
+# CTESTS       : list of C test programs
+# EXTRALIBS    : extra libraries to link in (optional)
+# EXTRADEFS    : extra symbol definitions, like -DWINELIB (optional)
+#
+# plus all variables required by the global Make.rules.in
+#
+
+DLLFLAGS     = @DLLFLAGS@
+DEFS         = $(EXTRADEFS)
+
+MODULE       = $(TESTDLL:%.dll=%)_test.exe
+TESTRESULTS  = $(CTESTS:.c=.ok)
+TESTPROGRAM  = $(MODULE)$(DLLEXT)
+RUNTESTFLAGS = -q -P wine -M $(TESTDLL) -T $(TOPOBJDIR) -p $(TESTPROGRAM)
+
+C_SRCS       = $(CTESTS)
+ALL_LIBS     = $(IMPORTS:%=-l%) $(EXTRALIBS) $(LDFLAGS) $(LIBS)
+EXTRA_OBJS   = testlist.o
+
+CROSSTEST    = $(TESTDLL:%.dll=%)_crosstest.exe
+CROSSOBJS    = $(C_SRCS:.c=.cross.o) $(RC_SRCS:.rc=.res.cross.o) $(BISON_SRCS:.y=.tab.cross.o) $(LEX_SRCS:.l=.yy.cross.o) $(IDL_GEN_C_SRCS:.c=.cross.o) testlist.cross.o
+CROSSCC      = @CROSSCC@
+CROSSWINDRES = @CROSSWINDRES@
+
+@MAKE_RULES@
+
+all: $(TESTPROGRAM)
+
+# Rules for .so main module
+
+$(MODULE).so: $(OBJS) $(RC_SRCS:.rc=.res) Makefile.in
+	$(WINEGCC) -B$(TOOLSDIR)/tools/winebuild -mconsole $(APPMODE) $(OBJS) $(RC_SRCS:.rc=.res) -o $@ $(LIBPORT) $(ALL_LIBS)
+
+# Rules for .exe main module
+
+$(MODULE): $(OBJS) $(RCOBJS) Makefile.in
+	$(CC) $(APPMODE) $(OBJS) $(RCOBJS) -o $@ -L$(DLLDIR) $(IMPORTS:%=-L$(DLLDIR)/%) $(ALL_LIBS)
+
+# Rules for building test list
+
+testlist.c: Makefile.in $(MAKECTESTS)
+	$(MAKECTESTS) -o $@ $(CTESTS)
+
+testlist.o: testlist.c $(TOPSRCDIR)/include/wine/test.h
+
+# Rules for testing
+
+check test:: $(TESTRESULTS)
+
+$(TESTRESULTS): $(MODULE)$(DLLEXT) ../$(TESTDLL)$(DLLEXT)
+
+# Rules for cross-compiling tests
+
+.SUFFIXES: .cross.o .res.cross.o
+
+.c.cross.o:
+	$(CROSSCC) -c $(ALLCFLAGS) -o $@ $<
+
+.res.res.cross.o:
+	$(CROSSWINDRES) -i $< -o $@
+
+crosstest:: @CROSSTEST@
+
+$(CROSSTEST): $(CROSSOBJS) Makefile.in
+	$(CROSSCC) $(CROSSOBJS) -o $@ $(ALL_LIBS)
+
+$(CROSSOBJS): $(IDL_GEN_HEADERS)
+
+# Rules for cleaning
+
+testclean::
+	$(RM) $(TESTRESULTS)
+
+clean::
+	$(RM) testlist.c $(MODULE) $(TESTRESULTS) $(CROSSTEST)

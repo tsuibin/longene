@@ -1,0 +1,16 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = msvcrtd.dll
+IMPORTLIB = msvcrtd
+IMPORTS   = msvcrt kernel32 ntdll
+MODCFLAGS = @BUILTINFLAG@
+EXTRAINCL = -I$(TOPSRCDIR)/include/msvcrt
+
+C_SRCS = \
+	debug.c
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

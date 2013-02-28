@@ -1,0 +1,19 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = iphlpapi.dll
+IMPORTLIB = iphlpapi
+IMPORTS   = advapi32 kernel32
+EXTRALIBS = @RESOLVLIBS@
+
+C_SRCS = \
+	ifenum.c \
+	iphlpapi_main.c \
+	ipstats.c
+
+RC_SRCS = version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

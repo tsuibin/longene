@@ -1,0 +1,14 @@
+TOPSRCDIR   = @top_srcdir@
+TOPOBJDIR   = ../..
+SRCDIR      = @srcdir@
+VPATH       = @srcdir@
+MODULE      = spoolss.dll
+IMPORTLIB   = spoolss
+IMPORTS     = winspool kernel32
+
+C_SRCS  = \
+        spoolss_main.c
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

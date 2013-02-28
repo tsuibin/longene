@@ -1,0 +1,22 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = oleview.exe
+APPMODE   = -mwindows -municode
+IMPORTS   = uuid comdlg32 comctl32 shell32 oleaut32 ole32 user32 advapi32 kernel32
+EXTRADEFS = -DUNICODE
+
+C_SRCS = \
+	details.c \
+	interface.c \
+	oleview.c \
+	pane.c \
+	tree.c \
+	typelib.c
+
+RC_SRCS = rsrc.rc
+
+@MAKE_PROG_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

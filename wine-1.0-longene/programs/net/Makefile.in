@@ -1,0 +1,15 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = net.exe
+APPMODE   = -mconsole
+IMPORTS   = netapi32 user32 advapi32 kernel32
+
+C_SRCS = net.c
+
+RC_SRCS = rsrc.rc
+
+@MAKE_PROG_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

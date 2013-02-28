@@ -1,0 +1,321 @@
+/*
+ * WineCfg resources
+ * Korean Language Support
+ *
+ * Copyright 2002 Jaco Greeff
+ * Copyright 2003 Dimitrie O. Paun
+ * Copyright 2003-2004 Mike Hearn
+ * Copyright 2005,2006,2007 YunSong Hwang
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+ *
+ */
+
+LANGUAGE LANG_KOREAN, SUBLANG_DEFAULT
+
+IDR_WINECFG MENU DISCARDABLE
+BEGIN
+    POPUP ""
+    BEGIN
+        MENUITEM "설정", IDC_AUDIO_CONFIGURE
+    END
+END
+
+IDD_ABOUTCFG DIALOGEX 0, 0, 260, 270
+STYLE WS_CHILD
+FONT 9, "MS Shell Dlg"
+BEGIN
+    LTEXT           PACKAGE_STRING,IDC_STATIC,119,17,120,8
+    CONTROL         IDB_WINE,IDC_STATIC,"Static",SS_BITMAP ,15,17,157,111
+    LTEXT           "http://www.winehq.org/",IDC_STATIC,119,31,106,8
+    LTEXT           "이 라이브러리는 자유 소프트웨어입니다. 당신은 자유 소프트웨어 재단(Free Software Foundation)에서 만든 GNU LGPL(Lesser General Public License) 아래에서 이 프로그램을 재배포 또는 수정할 수 있습니다. 라이센스의 버전은 2.1 또는 (선택적으로) 그 이후 버전을 따르면 됩니다.",
+                    IDC_STATIC,119,44,124,72
+END
+
+IDD_APPCFG DIALOG DISCARDABLE  0, 0, 260, 250
+STYLE WS_CHILD | WS_DISABLED
+FONT 9, "MS Shell Dlg"
+BEGIN
+    GROUPBOX        " 프로그램 설정 ",IDC_STATIC, 8,4,244,240
+    LTEXT           "Wine은 각각의 프로그램에 대해서 다른 버전의 윈도우즈를 흉내낼 수 있습니다. 이 탭은 라이브러리 탭, 그래픽 탭과 연결되어 있어서, 이들 탭을 이용하여 시스템 전체 또는 프로그램별로 설정이 가능합니다.",
+                    IDC_STATIC,15,20,227,30
+    CONTROL         "프로그램",IDC_APP_LISTVIEW,"SysListView32",WS_BORDER | WS_TABSTOP | LVS_LIST | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
+                    15,50,230,150
+    PUSHBUTTON      "프로그램 추가(&A)...",IDC_APP_ADDAPP, 90,204,75,14
+    PUSHBUTTON      "프로그램 제거(&R)",IDC_APP_REMOVEAPP, 170,204,75,14
+    LTEXT           "윈도우즈 버젼(&W):",IDC_STATIC,16,227,75,14
+    COMBOBOX        IDC_WINVER,83,224,163,56,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP    
+END
+
+IDD_GRAPHCFG DIALOG DISCARDABLE  0, 0, 260, 250
+STYLE WS_CHILD | WS_DISABLED
+FONT 9, "MS Shell Dlg"
+BEGIN
+    GROUPBOX    " 창 설정 ",IDC_STATIC,8,4,244,84
+    CONTROL     "마우스 커서를 DirectX 프로그램 창안에 잡아두기(&M)",IDC_DX_MOUSE_GRAB,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,20,230,8
+    CONTROL     "창관리자가 Wine창을 꾸미도록 함(&D)",IDC_ENABLE_DECORATED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,32,230,8
+    CONTROL     "창관리자가 Wine창을 관리하도록 함(&W)",IDC_ENABLE_MANAGED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,44,230,8
+    CONTROL     "가상 데스크탑 흉내내기(&D)",IDC_ENABLE_DESKTOP,"Button",
+                BS_AUTOCHECKBOX | WS_TABSTOP,15,56,230,8
+    LTEXT       "데스크탑 크기(&S):",IDC_DESKTOP_SIZE,15,70,44,8,WS_DISABLED
+    LTEXT       "X",IDC_DESKTOP_BY,109,70,8,8,WS_DISABLED
+    EDITTEXT    IDC_DESKTOP_WIDTH,64,68,40,12,ES_AUTOHSCROLL | ES_NUMBER | WS_DISABLED
+    EDITTEXT    IDC_DESKTOP_HEIGHT,117,68,40,12,ES_AUTOHSCROLL | ES_NUMBER | WS_DISABLED
+
+    GROUPBOX    " 다이렉트 3D ",IDC_STATIC,8,95,244,49
+    LTEXT       "버텍스 쉐이더 지원(&V): ",IDC_STATIC,15,110,80,32
+    COMBOBOX    IDC_D3D_VSHADER_MODE,100,108,145,70,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL     "하드웨어에서 지원할 경우, 픽셀 쉐이더 허용(&P)",IDC_D3D_PSHADER_MODE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,126,230,10
+
+    GROUPBOX    " 화면 해상도(&R) ",IDC_STATIC,8,151,244,93
+    CONTROL     "", IDC_RES_TRACKBAR, "msctls_trackbar32",WS_TABSTOP,12,161,187,15
+    EDITTEXT    IDC_RES_DPIEDIT,204,161,23,13,ES_NUMBER|WS_TABSTOP
+    LTEXT       "dpi",IDC_STATIC,235,163,10,8
+    LTEXT       "This is a sample text using 10 point Tahoma( 타호마 10포인트 글꼴을 사용한 샘플 텍스트입니다",IDC_RES_FONT_PREVIEW,15,181,230,55
+END
+
+IDD_DLLCFG DIALOG DISCARDABLE  0, 0, 260, 250
+STYLE WS_CHILD | WS_DISABLED
+FONT 9, "MS Shell Dlg"
+BEGIN
+    GROUPBOX        " DLL 오버라이드 ",IDC_STATIC,8,4,244,240
+    LTEXT           "동적 링크 라이브러리는 개별적으로 내장(Wine에 의해 제공)이나 네이티브(윈도우즈나 프로그램에 의해 제공)으로 지정될수 있습니다."
+                    ,IDC_STATIC,16,16,220,32
+    LTEXT           "새로 오버라이드할 라이브러리(&N):",IDC_STATIC,16,58,108,8
+    COMBOBOX        IDC_DLLCOMBO,16,68,140,14,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP | CBS_SORT | CBS_LOWERCASE
+    PUSHBUTTON      "더하기(&A)",IDC_DLLS_ADDDLL, 164,68,82,13,BS_DEFPUSHBUTTON 
+    LTEXT           "현재 오버라이드 목록(&O):",IDC_STATIC,16,86,100,8
+    LISTBOX         IDC_DLLS_LIST,16,96,140,140,WS_BORDER | WS_TABSTOP | WS_VSCROLL
+    PUSHBUTTON      "고치기(&E)",IDC_DLLS_EDITDLL,164,96,82,14
+    PUSHBUTTON      "지우기(&R)",IDC_DLLS_REMOVEDLL,164,114,82,14 
+END
+
+IDD_LOADORDER DIALOG DISCARDABLE 80, 90, 110, 92
+STYLE DS_MODALFRAME | WS_CAPTION | WS_SYSMENU
+CAPTION "오버라이드 수정"
+FONT 9, "MS Shell Dlg"
+BEGIN
+    GROUPBOX        " 로드 순서 ",IDC_STATIC,8,4,94,66
+    CONTROL         "내장(&B)(Wine)",IDC_RAD_BUILTIN,"Button", BS_AUTORADIOBUTTON | WS_GROUP,16,14,75,10
+    CONTROL         "네이티브(&N)(Win)",IDC_RAD_NATIVE,"Button", BS_AUTORADIOBUTTON,16,24,75,10
+    CONTROL         "내장, 네이티브(&L)",IDC_RAD_BUILTIN_NATIVE,"Button", BS_AUTORADIOBUTTON,16,34,75,10
+    CONTROL         "네이티브, 내장(&V)",IDC_RAD_NATIVE_BUILTIN,"Button", BS_AUTORADIOBUTTON,16,44,75,10
+    CONTROL         "사용하지 않음(&D)",IDC_RAD_DISABLE,"Button", BS_AUTORADIOBUTTON,16,54,75,10
+    DEFPUSHBUTTON   "확인",IDOK,8,74,45,14,WS_GROUP
+    PUSHBUTTON      "취소",IDCANCEL,57,74,45,14,WS_GROUP
+END
+
+IDD_DRIVECFG DIALOG DISCARDABLE  0, 0, 260, 250
+STYLE WS_CHILD | WS_DISABLED
+FONT 9, "MS Shell Dlg"
+BEGIN
+    GROUPBOX        " 드라이브 연결(&M) ",IDC_STATIC,8,4,244,240
+    CONTROL         "목록보기",IDC_LIST_DRIVES,"SysListView32",LVS_REPORT | LVS_AUTOARRANGE | LVS_ALIGNLEFT |
+                    LVS_SINGLESEL | WS_BORDER | WS_TABSTOP, 15,18,232,76
+    PUSHBUTTON      "추가(&A)...",IDC_BUTTON_ADD,15,98,37,14
+    PUSHBUTTON      "제거(&R)",IDC_BUTTON_REMOVE,56,98,37,14
+    PUSHBUTTON      "자동 찾기(&D)...",IDC_BUTTON_AUTODETECT,195,98,51,14
+
+    /* editing drive details */
+    LTEXT           "경로(&P):",IDC_STATIC,15,123,30,10   
+    EDITTEXT        IDC_EDIT_PATH,50,120,140,13,ES_AUTOHSCROLL | WS_TABSTOP
+    PUSHBUTTON      "찾아보기(&B)...",IDC_BUTTON_BROWSE_PATH,195,120,51,13
+    
+    LTEXT           "종류(&T):",IDC_STATIC_TYPE,15,138,30,10
+    COMBOBOX        IDC_COMBO_TYPE,50,135,70,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    
+    LTEXT           "라벨과 시리얼 번호",IDC_LABELSERIAL_STATIC,15,155,95,10
+    
+    PUSHBUTTON      "추가옵션 보이기(&A)",IDC_BUTTON_SHOW_HIDE_ADVANCED,175,136,71,13
+    CONTROL         "장치로부터 자동검출(&F):",IDC_RADIO_AUTODETECT,"Button",
+                    BS_AUTORADIOBUTTON,15,166,93,10
+    EDITTEXT        IDC_EDIT_DEVICE,27,176,163,13,ES_AUTOHSCROLL
+    PUSHBUTTON      "찾아보기(&W)...",IDC_BUTTON_BROWSE_DEVICE,195,176,51,13
+    CONTROL         "수동으로 지정(&M):",IDC_RADIO_ASSIGN,"Button",
+                    BS_AUTORADIOBUTTON,15,195,69,10
+
+    LTEXT           "라벨(&L):",IDC_STATIC_LABEL,27,208,35,12
+    EDITTEXT        IDC_EDIT_LABEL,63,205,78,13,ES_AUTOHSCROLL | WS_TABSTOP
+    LTEXT           "시리얼(&E):",IDC_STATIC_SERIAL,27,225,35,12
+    EDITTEXT        IDC_EDIT_SERIAL,63,221,78,13,ES_AUTOHSCROLL | WS_TABSTOP
+
+    CONTROL         "숨김 파일(.으로 시작하는 파일) 보여주기(&D)",IDC_SHOW_DOT_FILES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,260,230,8
+END
+
+IDD_AUDIOCFG DIALOG DISCARDABLE  0, 0, 260, 250
+STYLE WS_CHILD | WS_DISABLED
+FONT 9, "MS Shell Dlg"
+BEGIN
+    GROUPBOX        " 드라이버 선택 ",IDC_STATIC,8,4,244,195
+    LTEXT           "원하는 드라이버의 박스를 체크하여 사운드 드라이버를 선택합니다. 어떤 드라이버도 선택하지 않으면 사운드가 해제됩니다. 여러 드라이버를 선택하는 것은 추천하지 않습니다. 드라이버 위에서 마우스 오른쪽 버튼 클릭하여 드라이버를 설정합니다.",IDC_STATIC,15,20,227,33
+    CONTROL         "장치",IDC_AUDIO_TREE,"SysTreeView32",WS_BORDER | WS_TABSTOP,15,56,140,134
+    PUSHBUTTON      "소리 테스트(&T)",IDC_AUDIO_TEST,170,57,59,14
+    PUSHBUTTON      "제어판(&C)",IDC_AUDIO_CONTROL_PANEL,170,77,59,14
+    GROUPBOX        " 다이렉트 사운드 ",IDC_STATIC,8,205,244,60
+    LTEXT           "하드웨어 가속(&H): ",IDC_STATIC,15,215,90,10
+    COMBOBOX        IDC_DSOUND_HW_ACCEL,100,213,146,70,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "기본 샘플/초(&S):",IDC_STATIC,15,232,70,8
+    COMBOBOX        IDC_DSOUND_RATES,90,230,42,76,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "기본 비트/샘플(&B):",IDC_STATIC,137,232,80,8
+    COMBOBOX        IDC_DSOUND_BITS,220,230,26,56,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "드라이버 흉내내기(&E)",IDC_DSOUND_DRV_EMUL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,250,230,10
+END
+
+IDD_DESKTOP_INTEGRATION DIALOG DISCARDABLE  0, 0, 260, 250
+STYLE WS_CHILD | WS_DISABLED
+FONT 9, "MS Shell Dlg"
+BEGIN
+    GROUPBOX        " 외관 ",IDC_STATIC,8,4,244,106
+    LTEXT           "테마(&T):",IDC_STATIC,15,16,130,8
+    COMBOBOX        IDC_THEME_THEMECOMBO,15,24,130,14,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "테마 설치(&I)...",IDC_THEME_INSTALL,152,23,93,14
+    LTEXT           "색상(&C):",IDC_THEME_COLORTEXT,15,40,112,8
+    COMBOBOX        IDC_THEME_COLORCOMBO,15,48,112,14,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "크기(&S):",IDC_THEME_SIZETEXT,135,40,110,8
+    COMBOBOX        IDC_THEME_SIZECOMBO,135,48,110,14,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "목록(&E):",IDC_STATIC,15,64,112,8
+    COMBOBOX        IDC_SYSPARAM_COMBO,15,74,112,120,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP | CBS_SORT
+    LTEXT           "색상(&O):",IDC_SYSPARAM_COLOR_TEXT,135,64,25,8,WS_DISABLED
+    PUSHBUTTON      "",IDC_SYSPARAM_COLOR,135,74,25,13,WS_DISABLED | BS_OWNERDRAW
+    LTEXT           "크기(&Z):",IDC_SYSPARAM_SIZE_TEXT,166,64,30,8,WS_DISABLED
+    EDITTEXT        IDC_SYSPARAM_SIZE,166,74,23,13,ES_AUTOHSCROLL | WS_TABSTOP | WS_DISABLED
+    CONTROL         "",IDC_SYSPARAM_SIZE_UD,UPDOWN_CLASS,UDS_SETBUDDYINT | WS_DISABLED,187,74,15,13
+    PUSHBUTTON      "글꼴(&F)",IDC_SYSPARAM_FONT,208,74,37,13,WS_DISABLED
+    GROUPBOX        " 쉘 폴더(&H) ",IDC_STATIC,8,114,244,100
+    CONTROL         "목록보기",IDC_LIST_SFPATHS,"SysListView32",LVS_REPORT | LVS_AUTOARRANGE | LVS_ALIGNLEFT |
+                     LVS_SINGLESEL | WS_BORDER | WS_TABSTOP, 15,126,230,64
+    CONTROL         "연결 위치(&L):",IDC_LINK_SFPATH,"Button",BS_AUTOCHECKBOX|WS_TABSTOP|WS_DISABLED,15,195,55,13
+    EDITTEXT         IDC_EDIT_SFPATH,75,195,135,13,ES_AUTOHSCROLL|WS_TABSTOP|WS_DISABLED
+    PUSHBUTTON      "찾기(&R)",IDC_BROWSE_SFPATH,215,195,30,13,WS_DISABLED
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_TAB_APPLICATIONS    "프로그램"
+    IDS_TAB_DLLS            "라이브러리"
+    IDS_TAB_DRIVES          "드라이브"
+    IDS_CHOOSE_PATH         "유닉스 목적 폴더를 선택하십시오."
+    IDS_HIDE_ADVANCED       "추가옵션 숨기기(&A)"
+    IDS_SHOW_ADVANCED       "추가옵션 보이기(&A)"
+    IDS_NOTHEME             "(테마 없음)"
+    IDS_TAB_GRAPHICS        "그래픽"
+    IDS_TAB_DESKTOP_INTEGRATION "데스크탑 설정"
+    IDS_TAB_AUDIO           "오디오"
+    IDS_TAB_ABOUT           "정보"
+    IDS_WINECFG_TITLE       "Wine 설정"
+    IDS_WINECFG_TITLE_APP   "%s를 위한 Wine 설정"
+    IDS_THEMEFILE           "테마 파일"
+    IDS_THEMEFILE_SELECT    "테마 파일 선택"
+    IDS_AUDIO_MISSING       "현재 레지스트리에 오디오 드라이버가 지정되어 있지 않습니다.\n\n추천 드라이버가 선택었습니다.\n이 드라이버를 사용하거나 가능한 다른 드라이버를 선택할 수 있습니다.\n\n선택 사항이 효과를 나타내기 위해서는 적용 버튼을 눌러야 합니다."
+    IDS_SHELL_FOLDER        "쉘 폴더"
+    IDS_LINKS_TO            "연결 위치"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_DLL_WARNING         "이 라이브러리의 로드 순서를 바꾸는 것을 추천하지 않습니다..\n정말로 바꾸시겠습니까?"
+    IDS_DLL_WARNING_CAPTION "경고: 시스템 라이브러리"
+    IDS_DLL_NATIVE          "네이티브"
+    IDS_DLL_BUILTIN         "내장"
+    IDS_DLL_NATIVE_BUILTIN  "네이티브, 내장"
+    IDS_DLL_BUILTIN_NATIVE  "내장, 네이티브"
+    IDS_DLL_DISABLED        "사용하지 않음"
+    IDS_DEFAULT_SETTINGS    "기본 설정"
+    IDS_EXECUTABLE_FILTER   "Wine 프로그램 (*.exe,*.exe.so)\0*.exe;*.exe.so\0"
+    IDS_USE_GLOBAL_SETTINGS "전체 설정 사용"
+    IDS_SELECT_EXECUTABLE   "실행 파일 선택"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_SHADER_MODE_HARDWARE    "하드웨어"
+    IDS_SHADER_MODE_NONE        "없음"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+   IDS_DRIVE_UNKNOWN           "자동으로 찾기"
+   IDS_DRIVE_FIXED             "연결된 하드 디스크"
+   IDS_DRIVE_REMOTE            "네트워크 공유"
+   IDS_DRIVE_REMOVABLE         "플로피 디스크"
+   IDS_DRIVE_CDROM             "CD-ROM"
+   IDS_DRIVE_LETTERS_EXCEEDED  "당신은 더 이상 드라이브를 추가할 수 없습니다.\n\n각 드라이브는 반드시 A~Z까지의 문자를 가집니다, 그래서 당신은 26개보다 더 많이 추가할 수 없습니다"
+   IDS_SYSTEM_DRIVE_LABEL      "시스템 드라이브"
+   IDS_CONFIRM_DELETE_C        "당신은 하드 드라이브  C를 지우기를 원합니까?\n\n대부분의 윈도우 프로그램은 C드라이브가 있다고 예상하고,  없으면 다운될것입니다. 만약 당신이 계속 진행하기를 원한다면 반드시 다시 만드십시오!"
+   IDS_COL_DRIVELETTER         "문자"
+   IDS_COL_DRIVEMAPPING        "드라이브 할당"
+   IDS_NO_DRIVE_C              "당신은  C드라이브를 가지고 있지 않습니다. 이것은 좋은 일이 아닙니다.\n\n드라이브 탭에서 [추가]를 클릭해서 만드는 것을 잊지 마십시오!\n"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+   IDS_ACCEL_FULL              "전체"
+   IDS_ACCEL_STANDARD          "표준"
+   IDS_ACCEL_BASIC             "기본"
+   IDS_ACCEL_EMULATION         "애뮬레이션"
+   IDS_DRIVER_ALSA             "ALSA 드라이버"
+   IDS_DRIVER_ESOUND           "EsounD 드라이버"
+   IDS_DRIVER_OSS              "OSS 드라이버"
+   IDS_DRIVER_JACK             "JACK 드라이버"
+   IDS_DRIVER_NAS              "NAS 드라이버"
+   IDS_DRIVER_AUDIOIO          "Audio IO (Solaris) 드라이버"
+   IDS_DRIVER_COREAUDIO        "CoreAudio 드라이버"
+   IDS_OPEN_DRIVER_ERROR       "%s를 열 수 없습니다!"
+   IDS_SOUNDDRIVERS            "사운드 드라이버"
+   IDS_DEVICES_WAVEOUT         "Wave 출력 장치"
+   IDS_DEVICES_WAVEIN          "Wave 입력 장치"
+   IDS_DEVICES_MIDIOUT         "MIDI 출력 장치"
+   IDS_DEVICES_MIDIIN          "MIDI 입력 장치"
+   IDS_DEVICES_AUX             "Aux 장치"
+   IDS_DEVICES_MIXER           "Mixer 장치"
+   IDS_UNAVAILABLE_DRIVER      "레지스트리에서 가능하지 않은 드라이버가 발견되었습니다!\n\n %s를 레지스트리에서 지우겠습니까?"
+   IDS_WARNING                 "경고"
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+   IDC_SYSPARAMS_BUTTON            "컨트롤 배경"
+   IDC_SYSPARAMS_BUTTON_TEXT       "컨트롤 문자"
+   IDC_SYSPARAMS_DESKTOP           "바탕화면"
+   IDC_SYSPARAMS_MENU              "메뉴 배경"
+   IDC_SYSPARAMS_MENU_TEXT         "메뉴 문자"
+   IDC_SYSPARAMS_SCROLLBAR         "목록바"
+   IDC_SYSPARAMS_SELECTION         "선택된 배경"
+   IDC_SYSPARAMS_SELECTION_TEXT    "선택된 문자"
+   IDC_SYSPARAMS_TOOLTIP           "도구팁 배경"
+   IDC_SYSPARAMS_TOOLTIP_TEXT      "도구팁 문자"
+   IDC_SYSPARAMS_WINDOW            "창 배경"
+   IDC_SYSPARAMS_WINDOW_TEXT       "창 문자"
+   IDC_SYSPARAMS_ACTIVE_TITLE      "활성된 제목 막대"
+   IDC_SYSPARAMS_ACTIVE_TITLE_TEXT "활성된 제목 문자"
+   IDC_SYSPARAMS_INACTIVE_TITLE    "비활성된 제목 막대"
+   IDC_SYSPARAMS_INACTIVE_TITLE_TEXT "비활성된 제목 문자"
+   IDC_SYSPARAMS_MSGBOX_TEXT       "메세지 상자 텍스트"
+   IDC_SYSPARAMS_APPWORKSPACE      "어플리케이션 작업공간"
+   IDC_SYSPARAMS_WINDOW_FRAME      "창 프레임"
+   IDC_SYSPARAMS_ACTIVE_BORDER     "활성화된 창틀"
+   IDC_SYSPARAMS_INACTIVE_BORDER   "비 활성화된 창틀"
+   IDC_SYSPARAMS_BUTTON_SHADOW     "컨트롤 그함지"
+   IDC_SYSPARAMS_GRAY_TEXT         "회색 문자"
+   IDC_SYSPARAMS_BUTTON_HILIGHT    "컨트롤 하이라이트"
+   IDC_SYSPARAMS_BUTTON_DARK_SHADOW "컨트롤 어두운 그림자"
+   IDC_SYSPARAMS_BUTTON_LIGHT      "컨트롤 밝음"
+   IDC_SYSPARAMS_BUTTON_ALTERNATE  "컨트롤 바뀔때 배경"
+   IDC_SYSPARAMS_HOT_TRACKING      "핫 트랙된 아이템"
+   IDC_SYSPARAMS_ACTIVE_TITLE_GRADIENT "활성화된  제목 바  색깔 변화"
+   IDC_SYSPARAMS_INACTIVE_TITLE_GRADIENT "비활성화된 제목바 색깔 변화"
+   IDC_SYSPARAMS_MENU_HILIGHT      "메뉴 하이라이트"
+   IDC_SYSPARAMS_MENUBAR           "메뉴바"
+END

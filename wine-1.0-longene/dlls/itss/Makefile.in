@@ -1,0 +1,21 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = itss.dll
+IMPORTS   = uuid urlmon shlwapi ole32 kernel32
+EXTRADEFS = -DCOM_NO_WINDOWS_H
+
+C_SRCS = \
+	chm_lib.c \
+	lzx.c \
+	itss.c \
+	moniker.c \
+	protocol.c \
+	storage.c
+
+RC_SRCS = rsrc.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

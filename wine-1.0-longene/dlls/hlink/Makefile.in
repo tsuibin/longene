@@ -1,0 +1,18 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = hlink.dll
+IMPORTLIB = hlink
+IMPORTS   = uuid shell32 ole32 advapi32 kernel32
+DELAYIMPORTS = urlmon
+
+C_SRCS = \
+	browse_ctx.c \
+	extserv.c \
+	hlink_main.c \
+	link.c
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

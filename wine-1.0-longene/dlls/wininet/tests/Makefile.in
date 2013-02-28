@@ -1,0 +1,18 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+TESTDLL   = wininet.dll
+IMPORTS   = wininet ws2_32 kernel32
+
+CTESTS = \
+	ftp.c \
+	generated.c \
+	http.c \
+	internet.c \
+	url.c \
+	urlcache.c
+
+@MAKE_TEST_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

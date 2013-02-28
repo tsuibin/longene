@@ -1,0 +1,16 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = winnls32.dll
+IMPORTLIB = winnls32
+IMPORTS   = kernel32
+
+C_SRCS = \
+	winnls.c
+
+SPEC_SRCS16 = winnls.spec
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

@@ -1,0 +1,81 @@
+EXTRADEFS = -D_OLE32_ -DCOM_NO_WINDOWS_H
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = ole32.dll
+IMPORTLIB = ole32
+IMPORTS   = uuid advapi32 user32 gdi32 rpcrt4 kernel32 ntdll
+
+C_SRCS = \
+	antimoniker.c \
+	bindctx.c \
+	classmoniker.c \
+	clipboard.c \
+	compobj.c \
+	compositemoniker.c \
+	datacache.c \
+	defaulthandler.c \
+	dictionary.c \
+	enumx.c \
+	errorinfo.c \
+	filemoniker.c \
+	ftmarshal.c \
+	git.c \
+	hglobalstream.c \
+	ifs.c \
+	itemmoniker.c \
+	marshal.c \
+	memlockbytes.c \
+	moniker.c \
+	ole2.c \
+	ole2stubs.c \
+	ole2impl.c \
+	ole32_main.c \
+	oleobj.c \
+	oleproxy.c \
+	pointermoniker.c \
+	regsvr.c \
+	rpc.c \
+	stg_bigblockfile.c \
+	stg_prop.c \
+	stg_stream.c \
+	storage32.c \
+	stubmanager.c \
+	usrmarshal.c
+
+C_SRCS16 = \
+	memlockbytes16.c \
+	ole16.c \
+	ole2_16.c \
+	ole2nls.c \
+	storage.c
+
+SPEC_SRCS16 = \
+	compobj.spec \
+	ole2.spec \
+	ole2conv.spec \
+	ole2nls.spec \
+	ole2prox.spec \
+	ole2thk.spec \
+	storage.spec
+
+RC_SRCS = ole32res.rc
+
+RC_SRCS16 = version16.rc
+
+IDL_H_SRCS = \
+	dcom.idl
+
+IDL_C_SRCS = \
+	irot.idl
+
+@MAKE_DLL_RULES@
+
+ole2nls.spec.o: ole2nls.spec version16.res
+	$(WINEBUILD) $(WINEBUILDFLAGS) --dll -o $@ --dll-name ole2nls --main-module $(MODULE) --res version16.res --export $(SRCDIR)/ole2nls.spec
+
+version16.res: version16.rc
+	$(LDPATH) $(RC16) $(RC16FLAGS) -fo$@ $(SRCDIR)/version16.rc
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

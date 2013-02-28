@@ -1,0 +1,20 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = hhctrl.ocx
+IMPORTS   = uuid advapi32 comctl32 shlwapi ole32 oleaut32 user32 gdi32 kernel32
+
+C_SRCS = \
+	chm.c \
+	content.c \
+	help.c \
+	hhctrl.c \
+	regsvr.c \
+	webbrowser.c
+
+RC_SRCS = hhctrl.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

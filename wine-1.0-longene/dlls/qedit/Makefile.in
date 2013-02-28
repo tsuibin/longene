@@ -1,0 +1,15 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = qedit.dll
+IMPORTS   = strmiids uuid oleaut32 ole32 advapi32 kernel32
+
+C_SRCS = \
+	main.c \
+	mediadet.c \
+	regsvr.c
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

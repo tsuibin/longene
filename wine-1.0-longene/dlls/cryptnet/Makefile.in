@@ -1,0 +1,15 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = cryptnet.dll
+IMPORTLIB = cryptnet
+IMPORTS   = crypt32 kernel32
+DELAYIMPORTS = wininet
+
+C_SRCS = \
+	cryptnet_main.c
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

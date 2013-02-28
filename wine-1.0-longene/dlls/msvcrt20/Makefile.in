@@ -1,0 +1,14 @@
+EXTRADEFS = -DUSE_MSVCRT_PREFIX
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = msvcrt20.dll
+IMPORTLIB = msvcrt20
+IMPORTS   = msvcrt kernel32
+
+C_SRCS = msvcrt20.c
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

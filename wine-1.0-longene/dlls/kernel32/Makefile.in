@@ -1,0 +1,124 @@
+EXTRADEFS = -D_KERNEL32_
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = kernel32.dll
+IMPORTLIB = kernel32
+IMPORTS   = ntdll
+EXTRALIBS = @COREFOUNDATIONLIB@ @LIBPOLL@
+EXTRADLLFLAGS = -Wb,-F,KERNEL32.dll -Wl,--image-base,0x7b800000
+
+SPEC_SRCS16 = \
+	comm.drv.spec \
+	krnl386.exe.spec \
+	stress.spec \
+	system.drv.spec \
+	toolhelp.spec \
+	win87em.spec \
+	windebug.spec
+
+C_SRCS = \
+	actctx.c \
+	atom.c \
+	change.c \
+	comm.c \
+	computername.c \
+	console.c \
+	cpu.c \
+	debugger.c \
+	dosmem.c \
+	editline.c \
+	environ.c \
+	except.c \
+	fiber.c \
+	file.c \
+	file16.c \
+	format_msg.c \
+	global16.c \
+	heap.c \
+	instr.c \
+	kernel_main.c \
+	lcformat.c \
+	local16.c \
+	locale.c \
+	lzexpand.c \
+	module.c \
+	ne_module.c \
+	ne_segment.c \
+	oldconfig.c \
+	path.c \
+	powermgnt.c \
+	process.c \
+	profile.c \
+	pthread.c \
+	relay16.c \
+	resource.c \
+	resource16.c \
+	selector.c \
+	snoop16.c \
+	stress.c \
+	string.c \
+	sync.c \
+	syslevel.c \
+	system.c \
+	tape.c \
+	task.c \
+	thread.c \
+	thunk.c \
+	time.c \
+	toolhelp.c \
+	utthunk.c \
+	version.c \
+	virtual.c \
+	volume.c \
+	vxd.c \
+	windebug.c \
+	wowthunk.c
+
+C_SRCS16 = \
+	atom16.c \
+	error16.c \
+	kernel16.c \
+	registry16.c \
+	toolhelp16.c \
+	win87em.c
+
+RC_SRCS = kernel.rc
+
+RC_SRCS16 = \
+	version16.rc
+
+MC_SRCS = \
+	nls/winerr_deu.mc \
+	nls/winerr_enu.mc \
+	nls/winerr_fra.mc \
+	nls/winerr_kor.mc
+
+EXTRA_OBJS   = relay16asm.o
+EXTRA_OBJS16 = winhelp.exe.o winoldap.mod.o
+
+EXTRASUBDIRS = nls
+
+@MAKE_DLL_RULES@
+
+kernel.res: $(MC_SRCS:.mc=.mc.rc)
+
+relay16asm.o: $(WINEBUILD)
+	$(WINEBUILD) $(WINEBUILDFLAGS) -o $@ --relay16
+
+winoldap.mod.o: $(WINEBUILD)
+	$(WINEBUILD) $(WINEBUILDFLAGS) --exe -o $@ --main-module $(MODULE) --entry WINOLDAP_EntryPoint
+
+winhelp.exe.o: $(WINEBUILD)
+	$(WINEBUILD) $(WINEBUILDFLAGS) --exe -o $@ --main-module $(MODULE) --entry WINHELP_EntryPoint
+
+# Special rules for 16-bit resource and spec files
+
+krnl386.exe.spec.o: krnl386.exe.spec version16.res
+	$(WINEBUILD) $(WINEBUILDFLAGS) --dll -o $@ --dll-name kernel --main-module $(MODULE) --res version16.res --export $(SRCDIR)/krnl386.exe.spec
+
+version16.res: version16.rc
+	$(LDPATH) $(RC16) $(RC16FLAGS) -fo$@ $(SRCDIR)/version16.rc
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

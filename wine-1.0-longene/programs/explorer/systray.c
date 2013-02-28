@@ -1,0 +1,572 @@
+/*
+ * Copyright (C) 2004 Mike Hearn, for CodeWeavers
+ * Copyright (C) 2005 Robert Shearman
+ * Copyright (C) 2008 Alexandre Julliard
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+ */
+
+#include <assert.h>
+
+#define UNICODE
+#define _WIN32_IE 0x500
+#include <windows.h>
+#include <commctrl.h>
+
+#include <wine/debug.h>
+#include <wine/list.h>
+
+#include "explorer_private.h"
+
+WINE_DEFAULT_DEBUG_CHANNEL(systray);
+
+#define IS_OPTION_FALSE(ch) \
+    ((ch) == 'n' || (ch) == 'N' || (ch) == 'f' || (ch) == 'F' || (ch) == '0')
+
+static int (*wine_notify_icon)(DWORD,NOTIFYICONDATAW *);
+
+/* an individual systray icon, unpacked from the NOTIFYICONDATA and always in unicode */
+struct icon
+{
+    struct list    entry;
+    HICON          image;    /* the image to render */
+    HWND           owner;    /* the HWND passed in to the Shell_NotifyIcon call */
+    HWND           tooltip;  /* Icon tooltip */
+    UINT           id;       /* the unique id given by the app */
+    UINT           callback_message;
+    int            display;  /* index in display list, or -1 if hidden */
+    WCHAR          tiptext[128]; /* Tooltip text. If empty => tooltip disabled */
+};
+
+static struct list icon_list = LIST_INIT( icon_list );
+static HWND tray_window;
+
+static unsigned int alloc_displayed;
+static unsigned int nb_displayed;
+static struct icon **displayed;  /* array of currently displayed icons */
+
+static BOOL hide_systray;
+static int icon_cx, icon_cy;
+
+#define MIN_DISPLAYED 8
+#define ICON_BORDER  2
+
+/* Retrieves icon record by owner window and ID */
+static struct icon *get_icon(HWND owner, UINT id)
+{
+    struct icon *this;
+
+    /* search for the icon */
+    LIST_FOR_EACH_ENTRY( this, &icon_list, struct icon, entry )
+        if ((this->id == id) && (this->owner == owner)) return this;
+
+    return NULL;
+}
+
+/* compute the size of the tray window */
+static SIZE get_window_size(void)
+{
+    SIZE size;
+    RECT rect;
+
+    rect.left = 0;
+    rect.top = 0;
+    rect.right = icon_cx * max( nb_displayed, MIN_DISPLAYED );
+    rect.bottom = icon_cy;
+    AdjustWindowRect( &rect, WS_CAPTION, FALSE );
+    size.cx = rect.right - rect.left;
+    size.cy = rect.bottom - rect.top;
+    return size;
+}
+
+/* Creates tooltip window for icon. */
+static void create_tooltip(struct icon *icon)
+{
+    TTTOOLINFOW ti;
+    static BOOL tooltips_initialized = FALSE;
+
+    /* Register tooltip classes if this is the first icon */
+    if (!tooltips_initialized)
+    {
+        INITCOMMONCONTROLSEX init_tooltip;
+
+        init_tooltip.dwSize = sizeof(INITCOMMONCONTROLSEX);
+        init_tooltip.dwICC = ICC_TAB_CLASSES;
+
+        InitCommonControlsEx(&init_tooltip);
+        tooltips_initialized = TRUE;
+    }
+
+    icon->tooltip = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL,
+                                   WS_POPUP | TTS_ALWAYSTIP,
+                                   CW_USEDEFAULT, CW_USEDEFAULT,
+                                   CW_USEDEFAULT, CW_USEDEFAULT,
+                                   tray_window, NULL, NULL, NULL);
+
+    ZeroMemory(&ti, sizeof(ti));
+    ti.cbSize = sizeof(TTTOOLINFOW);
+    ti.hwnd = tray_window;
+    ti.lpszText = icon->tiptext;
+    if (icon->display != -1)
+    {
+        ti.rect.left = icon_cx * icon->display;
+        ti.rect.right = icon_cx * (icon->display + 1);
+        ti.rect.top = 0;
+        ti.rect.bottom = icon_cy;
+    }
+    SendMessageW(icon->tooltip, TTM_ADDTOOLW, 0, (LPARAM)&ti);
+}
+
+/* Synchronize tooltip text with tooltip window */
+static void update_tooltip_text(struct icon *icon)
+{
+    TTTOOLINFOW ti;
+
+    ZeroMemory(&ti, sizeof(ti));
+    ti.cbSize = sizeof(TTTOOLINFOW);
+    ti.hwnd = tray_window;
+    ti.lpszText = icon->tiptext;
+
+    SendMessageW(icon->tooltip, TTM_UPDATETIPTEXTW, 0, (LPARAM)&ti);
+}
+
+/* synchronize tooltip position with tooltip window */
+static void update_tooltip_position( struct icon *icon )
+{
+    TTTOOLINFOW ti;
+
+    ZeroMemory(&ti, sizeof(ti));
+    ti.cbSize = sizeof(TTTOOLINFOW);
+    ti.hwnd = tray_window;
+    if (icon->display != -1)
+    {
+        ti.rect.left = icon_cx * icon->display;
+        ti.rect.right = icon_cx * (icon->display + 1);
+        ti.rect.top = 0;
+        ti.rect.bottom = icon_cy;
+    }
+    SendMessageW( icon->tooltip, TTM_NEWTOOLRECTW, 0, (LPARAM)&ti );
+}
+
+/* find the icon located at a certain point in the tray window */
+static struct icon *icon_from_point( int x, int y )
+{
+    if (y < 0 || y >= icon_cy) return NULL;
+    if (x < 0 || x >= icon_cx * nb_displayed) return NULL;
+    return displayed[x / icon_cx];
+}
+
+/* invalidate the portion of the tray window that contains the specified icons */
+static void invalidate_icons( unsigned int start, unsigned int end )
+{
+    RECT rect;
+
+    rect.left = start * icon_cx;
+    rect.top  = 0;
+    rect.right = (end + 1) * icon_cx;
+    rect.bottom = icon_cy;
+    InvalidateRect( tray_window, &rect, TRUE );
+}
+
+/* make an icon visible */
+static BOOL show_icon(struct icon *icon)
+{
+    WINE_TRACE("id=0x%x, hwnd=%p\n", icon->id, icon->owner);
+
+    if (icon->display != -1) return TRUE;  /* already displayed */
+
+    if (nb_displayed >= alloc_displayed)
+    {
+        unsigned int new_count = max( alloc_displayed * 2, 32 );
+        struct icon **ptr;
+        if (displayed) ptr = HeapReAlloc( GetProcessHeap(), 0, displayed, new_count * sizeof(*ptr) );
+        else ptr = HeapAlloc( GetProcessHeap(), 0, new_count * sizeof(*ptr) );
+        if (!ptr) return FALSE;
+        displayed = ptr;
+        alloc_displayed = new_count;
+    }
+
+    icon->display = nb_displayed;
+    displayed[nb_displayed++] = icon;
+    update_tooltip_position( icon );
+    invalidate_icons( nb_displayed-1, nb_displayed-1 );
+
+    if (nb_displayed > MIN_DISPLAYED)
+    {
+        SIZE size = get_window_size();
+        SetWindowPos( tray_window, 0, 0, 0, size.cx, size.cy, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE );
+    }
+    else if (nb_displayed == 1)
+    {
+        if (!hide_systray) ShowWindow( tray_window, SW_SHOWNA );
+    }
+
+    create_tooltip(icon);
+    return TRUE;
+}
+
+/* make an icon invisible */
+static BOOL hide_icon(struct icon *icon)
+{
+    unsigned int i;
+
+    WINE_TRACE("id=0x%x, hwnd=%p\n", icon->id, icon->owner);
+
+    if (icon->display == -1) return TRUE;  /* already hidden */
+
+    assert( nb_displayed );
+    for (i = icon->display; i < nb_displayed - 1; i++)
+    {
+        displayed[i] = displayed[i + 1];
+        displayed[i]->display = i;
+        update_tooltip_position( displayed[i] );
+    }
+    nb_displayed--;
+    invalidate_icons( icon->display, nb_displayed );
+    icon->display = -1;
+
+    if (nb_displayed >= MIN_DISPLAYED)
+    {
+        SIZE size = get_window_size();
+        SetWindowPos( tray_window, 0, 0, 0, size.cx, size.cy, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE );
+    }
+    else if (!nb_displayed)
+    {
+        ShowWindow( tray_window, SW_HIDE );
+    }
+
+    update_tooltip_position( icon );
+    return TRUE;
+}
+
+/* Modifies an existing icon record */
+static BOOL modify_icon( struct icon *icon, NOTIFYICONDATAW *nid )
+{
+    WINE_TRACE("id=0x%x, hwnd=%p\n", nid->uID, nid->hWnd);
+
+    /* demarshal the request from the NID */
+    if (!icon)
+    {
+        WINE_WARN("Invalid icon ID (0x%x) for HWND %p\n", nid->uID, nid->hWnd);
+        return FALSE;
+    }
+
+    if ((nid->uFlags & NIF_STATE) && (nid->dwStateMask & NIS_HIDDEN))
+    {
+        if (nid->dwState & NIS_HIDDEN) hide_icon( icon );
+        else show_icon( icon );
+    }
+
+    if (nid->uFlags & NIF_ICON)
+    {
+        if (icon->image) DestroyIcon(icon->image);
+        icon->image = CopyIcon(nid->hIcon);
+        if (icon->display != -1) invalidate_icons( icon->display, icon->display );
+    }
+
+    if (nid->uFlags & NIF_MESSAGE)
+    {
+        icon->callback_message = nid->uCallbackMessage;
+    }
+    if (nid->uFlags & NIF_TIP)
+    {
+        lstrcpynW(icon->tiptext, nid->szTip, sizeof(icon->tiptext)/sizeof(WCHAR));
+        if (icon->display != -1) update_tooltip_text(icon);
+    }
+    if (nid->uFlags & NIF_INFO && nid->cbSize >= NOTIFYICONDATAA_V2_SIZE)
+    {
+        WINE_FIXME("balloon tip title %s, message %s\n", wine_dbgstr_w(nid->szInfoTitle), wine_dbgstr_w(nid->szInfo));
+    }
+    return TRUE;
+}
+
+/* Adds a new icon record to the list */
+static BOOL add_icon(NOTIFYICONDATAW *nid)
+{
+    struct icon  *icon;
+
+    WINE_TRACE("id=0x%x, hwnd=%p\n", nid->uID, nid->hWnd);
+
+    if ((icon = get_icon(nid->hWnd, nid->uID)))
+    {
+        WINE_WARN("duplicate tray icon add, buggy app?\n");
+        return FALSE;
+    }
+
+    if (!(icon = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(*icon))))
+    {
+        WINE_ERR("out of memory\n");
+        return FALSE;
+    }
+
+    ZeroMemory(icon, sizeof(struct icon));
+    icon->id     = nid->uID;
+    icon->owner  = nid->hWnd;
+    icon->display = -1;
+
+    list_add_tail(&icon_list, &icon->entry);
+
+    modify_icon( icon, nid );
+    /* show icon, unless hidden state was explicitly specified */
+    if (!((nid->uFlags & NIF_STATE) && (nid->dwStateMask & NIS_HIDDEN))) show_icon( icon );
+    return TRUE;
+}
+
+/* Deletes tray icon window and icon record */
+static BOOL delete_icon(struct icon *icon)
+{
+    hide_icon(icon);
+    list_remove(&icon->entry);
+    DestroyIcon(icon->image);
+    HeapFree(GetProcessHeap(), 0, icon);
+    return TRUE;
+}
+
+/* cleanup icons belonging to windows that have been destroyed */
+static void cleanup_destroyed_windows(void)
+{
+    struct icon *icon, *next;
+
+    LIST_FOR_EACH_ENTRY_SAFE( icon, next, &icon_list, struct icon, entry )
+        if (!IsWindow( icon->owner )) delete_icon( icon );
+}
+
+static BOOL handle_incoming(HWND hwndSource, COPYDATASTRUCT *cds)
+{
+    struct icon *icon = NULL;
+    NOTIFYICONDATAW nid;
+    DWORD cbSize;
+    int ret = FALSE;
+
+    if (cds->cbData < NOTIFYICONDATAW_V1_SIZE) return FALSE;
+    cbSize = ((PNOTIFYICONDATA)cds->lpData)->cbSize;
+    if (cbSize < NOTIFYICONDATAW_V1_SIZE) return FALSE;
+
+    ZeroMemory(&nid, sizeof(nid));
+    memcpy(&nid, cds->lpData, min(sizeof(nid), cbSize));
+
+    /* FIXME: if statement only needed because we don't support interprocess
+     * icon handles */
+    if ((nid.uFlags & NIF_ICON) && (cds->cbData >= nid.cbSize + 2 * sizeof(BITMAP)))
+    {
+        LONG cbMaskBits;
+        LONG cbColourBits;
+        BITMAP bmMask;
+        BITMAP bmColour;
+        const char *buffer = cds->lpData;
+
+        buffer += nid.cbSize;
+
+        memcpy(&bmMask, buffer, sizeof(bmMask));
+        buffer += sizeof(bmMask);
+        memcpy(&bmColour, buffer, sizeof(bmColour));
+        buffer += sizeof(bmColour);
+
+        cbMaskBits = (bmMask.bmPlanes * bmMask.bmWidth * bmMask.bmHeight * bmMask.bmBitsPixel) / 8;
+        cbColourBits = (bmColour.bmPlanes * bmColour.bmWidth * bmColour.bmHeight * bmColour.bmBitsPixel) / 8;
+
+        if (cds->cbData < nid.cbSize + 2 * sizeof(BITMAP) + cbMaskBits + cbColourBits)
+        {
+            WINE_ERR("buffer underflow\n");
+            return FALSE;
+        }
+
+        /* sanity check */
+        if ((bmColour.bmWidth != bmMask.bmWidth) || (bmColour.bmHeight != bmMask.bmHeight))
+        {
+            WINE_ERR("colour and mask bitmaps aren't consistent\n");
+            return FALSE;
+        }
+
+        nid.hIcon = CreateIcon(NULL, bmColour.bmWidth, bmColour.bmHeight,
+                               bmColour.bmPlanes, bmColour.bmBitsPixel,
+                               buffer, buffer + cbMaskBits);
+    }
+
+    /* try forward to x11drv first */
+    if (cds->dwData == NIM_ADD || !(icon = get_icon( nid.hWnd, nid.uID )))
+    {
+        if (wine_notify_icon && ((ret = wine_notify_icon( cds->dwData, &nid )) != -1))
+        {
+            if (nid.uFlags & NIF_ICON) DestroyIcon( nid.hIcon );
+            return ret;
+        }
+        ret = FALSE;
+    }
+
+    switch (cds->dwData)
+    {
+    case NIM_ADD:
+        ret = add_icon(&nid);
+        break;
+    case NIM_DELETE:
+        if (icon) ret = delete_icon( icon );
+        break;
+    case NIM_MODIFY:
+        if (icon) ret = modify_icon( icon, &nid );
+        break;
+    default:
+        WINE_FIXME("unhandled tray message: %ld\n", cds->dwData);
+        break;
+    }
+
+    /* FIXME: if statement only needed because we don't support interprocess
+     * icon handles */
+    if (nid.uFlags & NIF_ICON)
+        DestroyIcon(nid.hIcon);
+
+    return ret;
+}
+
+static LRESULT WINAPI tray_wndproc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    switch (msg)
+    {
+    case WM_COPYDATA:
+        return handle_incoming((HWND)wparam, (COPYDATASTRUCT *)lparam);
+
+    case WM_TIMER:
+        cleanup_destroyed_windows();
+        break;
+
+    case WM_PAINT:
+        {
+            unsigned int i;
+            PAINTSTRUCT ps;
+            HDC hdc;
+
+            hdc = BeginPaint( hwnd, &ps );
+            for (i = ps.rcPaint.left / icon_cx;
+                 (i < (ps.rcPaint.right + icon_cx - 1) / icon_cx) && (i < nb_displayed);
+                 i++)
+            {
+                DrawIconEx( hdc, i * icon_cx + ICON_BORDER, ICON_BORDER, displayed[i]->image,
+                            icon_cx - 2*ICON_BORDER, icon_cy - 2*ICON_BORDER,
+                            0, 0, DI_DEFAULTSIZE|DI_NORMAL);
+            }
+            EndPaint( hwnd, &ps );
+            break;
+        }
+
+    case WM_MOUSEMOVE:
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP:
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONUP:
+    case WM_MBUTTONDOWN:
+    case WM_MBUTTONUP:
+    case WM_LBUTTONDBLCLK:
+    case WM_RBUTTONDBLCLK:
+    case WM_MBUTTONDBLCLK:
+        {
+            MSG message;
+            struct icon *icon = icon_from_point( (short)LOWORD(lparam), (short)HIWORD(lparam) );
+            if (!icon) break;
+
+            /* notify the owner hwnd of the message */
+            WINE_TRACE("relaying 0x%x\n", msg);
+
+            message.hwnd = hwnd;
+            message.message = msg;
+            message.wParam = wparam;
+            message.lParam = lparam;
+            SendMessageW( icon->tooltip, TTM_RELAYEVENT, 0, (LPARAM)&message );
+
+            if (!PostMessageW( icon->owner, icon->callback_message, (WPARAM) icon->id, (LPARAM) msg ) &&
+                GetLastError() == ERROR_INVALID_WINDOW_HANDLE)
+            {
+                WINE_WARN("application window was destroyed without removing "
+                          "notification icon, removing automatically\n");
+                delete_icon( icon );
+            }
+            break;
+        }
+
+    case WM_CLOSE:
+        /* don't destroy the tray window, just hide it */
+        ShowWindow( hwnd, SW_HIDE );
+        return 0;
+
+    default:
+        return DefWindowProcW( hwnd, msg, wparam, lparam );
+    }
+    return 0;
+}
+
+static BOOL is_systray_hidden(void)
+{
+    const WCHAR show_systray_keyname[] = {'S','o','f','t','w','a','r','e','\\','W','i','n','e','\\',
+                                          'X','1','1',' ','D','r','i','v','e','r',0};
+    const WCHAR show_systray_valuename[] = {'S','h','o','w','S','y','s','t','r','a','y',0};
+    HKEY hkey;
+    BOOL ret = FALSE;
+
+    /* @@ Wine registry key: HKCU\Software\Wine\X11 Driver */
+    if (RegOpenKeyW(HKEY_CURRENT_USER, show_systray_keyname, &hkey) == ERROR_SUCCESS)
+    {
+        WCHAR value[10];
+        DWORD type, size = sizeof(value);
+        if (RegQueryValueExW(hkey, show_systray_valuename, 0, &type, (LPBYTE)&value, &size) == ERROR_SUCCESS)
+        {
+            ret = IS_OPTION_FALSE(value[0]);
+        }
+        RegCloseKey(hkey);
+    }
+    return ret;
+}
+
+/* this function creates the listener window */
+void initialize_systray(void)
+{
+    HMODULE x11drv;
+    SIZE size;
+    WNDCLASSEX class;
+    static const WCHAR classname[] = {'S','h','e','l','l','_','T','r','a','y','W','n','d',0};
+    static const WCHAR winname[] = {'W','i','n','e',' ','S','y','s','t','e','m',' ','T','r','a','y',0};
+
+    if ((x11drv = GetModuleHandleA( "winex11.drv" )))
+        wine_notify_icon = (void *)GetProcAddress( x11drv, "wine_notify_icon" );
+
+    icon_cx = GetSystemMetrics( SM_CXSMICON ) + 2*ICON_BORDER;
+    icon_cy = GetSystemMetrics( SM_CYSMICON ) + 2*ICON_BORDER;
+    hide_systray = is_systray_hidden();
+
+    /* register the systray listener window class */
+    ZeroMemory(&class, sizeof(class));
+    class.cbSize        = sizeof(class);
+    class.style         = CS_DBLCLKS;
+    class.lpfnWndProc   = tray_wndproc;
+    class.hInstance     = NULL;
+    class.hIcon         = LoadIcon(0, IDI_WINLOGO);
+    class.hCursor       = LoadCursor(0, IDC_ARROW);
+    class.hbrBackground = (HBRUSH) COLOR_WINDOW;
+    class.lpszClassName = (WCHAR *) &classname;
+
+    if (!RegisterClassEx(&class))
+    {
+        WINE_ERR("Could not register SysTray window class\n");
+        return;
+    }
+
+    size = get_window_size();
+    tray_window = CreateWindowW( classname, winname, WS_OVERLAPPED | WS_CAPTION,
+                                 CW_USEDEFAULT, CW_USEDEFAULT, size.cx, size.cy, 0, 0, 0, 0 );
+    if (!tray_window)
+    {
+        WINE_ERR("Could not create tray window\n");
+        return;
+    }
+    SetTimer( tray_window, 1, 2000, NULL );
+}

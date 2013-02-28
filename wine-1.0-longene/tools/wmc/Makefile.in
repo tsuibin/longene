@@ -1,0 +1,43 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+EXEEXT    = @EXEEXT@
+
+PROGRAMS = wmc$(EXEEXT) wmc-installed
+MANPAGES = wmc.man
+MODULE   = none
+
+C_SRCS = \
+	lang.c \
+	mcl.c \
+	utils.c \
+	wmc.c \
+	write.c
+
+BISON_SRCS = mcy.y
+
+INSTALLDIRS = $(DESTDIR)$(bindir) $(DESTDIR)$(mandir)/man$(prog_manext)
+
+all: $(PROGRAMS) $(MANPAGES)
+
+@MAKE_RULES@
+
+wmc$(EXEEXT): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBWINE) $(LIBPORT) $(LDFLAGS) $(LDRPATH_LOCAL)
+
+wmc-installed: $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBWINE) $(LIBPORT) $(LDFLAGS) $(LDRPATH_INSTALL)
+
+install:: wmc-installed $(MANPAGES) $(INSTALLDIRS)
+	$(INSTALL_DATA) wmc.man $(DESTDIR)$(mandir)/man$(prog_manext)/wmc.$(prog_manext)
+	$(INSTALL_PROGRAM) wmc-installed $(DESTDIR)$(bindir)/wmc$(EXEEXT)
+
+uninstall::
+	$(RM) $(DESTDIR)$(bindir)/wmc$(EXEEXT) $(DESTDIR)$(mandir)/man$(prog_manext)/wmc.$(prog_manext)
+
+mcy.tab.c: mcy.tab.h   # for parallel makes
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend
+
+mcl.o: mcy.tab.h

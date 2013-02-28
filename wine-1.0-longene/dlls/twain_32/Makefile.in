@@ -1,0 +1,19 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = twain_32.dll
+IMPORTS   = kernel32
+
+C_SRCS = \
+	dsm_ctrl.c \
+	twain32_main.c
+
+C_SRCS16 = \
+	twain16_main.c
+
+SPEC_SRCS16 = twain.spec
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

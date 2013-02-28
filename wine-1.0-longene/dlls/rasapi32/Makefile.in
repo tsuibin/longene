@@ -1,0 +1,15 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = rasapi32.dll
+IMPORTLIB = rasapi32
+IMPORTS   = kernel32
+
+C_SRCS = rasapi.c
+
+SPEC_SRCS16 = rasapi16.spec
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

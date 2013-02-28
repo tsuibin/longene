@@ -1,0 +1,48 @@
+DEFS      = -DINCLUDEDIR="\"$(includedir)\""
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+EXEEXT    = @EXEEXT@
+
+PROGRAMS = wrc$(EXEEXT) wrc-installed
+MANPAGES = wrc.man
+MODULE   = none
+
+C_SRCS = \
+	dumpres.c \
+	genres.c \
+	newstruc.c \
+	readres.c \
+	translation.c \
+	utils.c \
+	wrc.c \
+	writeres.c
+
+LEX_SRCS   = parser.l
+BISON_SRCS = parser.y
+
+INSTALLDIRS = $(DESTDIR)$(bindir) $(DESTDIR)$(mandir)/man$(prog_manext)
+
+all: $(PROGRAMS) $(MANPAGES)
+
+@MAKE_RULES@
+
+wrc$(EXEEXT): $(OBJS) $(LIBWPP)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBWPP) $(LIBWINE) $(LIBPORT) $(LDFLAGS) $(LDRPATH_LOCAL)
+
+wrc-installed: $(OBJS) $(LIBWPP)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBWPP) $(LIBWINE) $(LIBPORT) $(LDFLAGS) $(LDRPATH_INSTALL)
+
+install:: wrc-installed $(MANPAGES) $(INSTALLDIRS)
+	$(INSTALL_DATA) wrc.man $(DESTDIR)$(mandir)/man$(prog_manext)/wrc.$(prog_manext)
+	$(INSTALL_PROGRAM) wrc-installed $(DESTDIR)$(bindir)/wrc$(EXEEXT)
+
+uninstall::
+	$(RM) $(DESTDIR)$(bindir)/wrc$(EXEEXT) $(DESTDIR)$(mandir)/man$(prog_manext)/wrc.$(prog_manext)
+
+parser.tab.c: parser.tab.h   # for parallel makes
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend
+
+parser.yy.o: parser.tab.h

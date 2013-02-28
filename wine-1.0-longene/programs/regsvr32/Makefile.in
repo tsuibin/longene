@@ -1,0 +1,16 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = regsvr32.exe
+APPMODE   = -mconsole
+IMPORTS   = ole32 kernel32
+
+C_SRCS = \
+	regsvr32.c
+
+RC_SRCS = regsvr32.rc
+
+@MAKE_PROG_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

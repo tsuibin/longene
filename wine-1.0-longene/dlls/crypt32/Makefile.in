@@ -1,0 +1,39 @@
+EXTRADEFS = -D_CRYPT32_
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = crypt32.dll
+IMPORTLIB = crypt32
+IMPORTS   = user32 advapi32 kernel32 ntdll
+DELAYIMPORTS = imagehlp
+
+C_SRCS = \
+	base64.c \
+	cert.c \
+	chain.c \
+	collectionstore.c \
+	context.c \
+	crl.c \
+	decode.c \
+	encode.c \
+	filestore.c \
+	main.c \
+	msg.c \
+	object.c \
+	oid.c \
+	proplist.c \
+	protectdata.c \
+	provstore.c \
+	regstore.c \
+	rootstore.c \
+	serialize.c \
+	sip.c \
+	store.c \
+	str.c
+
+RC_SRCS = crypt32.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

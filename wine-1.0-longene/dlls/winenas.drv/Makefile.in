@@ -1,0 +1,16 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = winenas.drv
+IMPORTS   = dxguid uuid winmm user32 kernel32
+EXTRAINCL = @X_CFLAGS@
+EXTRALIBS = @NASLIBS@
+
+C_SRCS = \
+	audio.c \
+	nas.c
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

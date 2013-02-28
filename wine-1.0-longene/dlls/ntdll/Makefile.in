@@ -1,0 +1,67 @@
+EXTRADEFS = -D_NTSYSTEM_
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = ntdll.dll
+IMPORTLIB = ntdll
+EXTRALIBS = @IOKITLIB@-ldl -lpthread
+EXTRADLLFLAGS = -Wl,--image-base,0x7bc00000
+
+C_SRCS = \
+	actctx.c \
+	atom.c \
+	cdrom.c \
+	critsection.c \
+	debugbuffer.c \
+	debugtools.c \
+	directory.c \
+	env.c \
+	error.c \
+	exception.c \
+	file.c \
+	handletable.c \
+	heap.c \
+	large_int.c \
+	loader.c \
+	loadorder.c \
+	misc.c \
+	nt.c \
+	om.c \
+	path.c \
+	process.c \
+	reg.c \
+	relay.c \
+	resource.c \
+	rtl.c \
+	rtlbitmap.c \
+	rtlstr.c \
+	sec.c \
+	serial.c \
+	server.c \
+	signal_i386.c \
+	signal_powerpc.c \
+	signal_sparc.c \
+	signal_x86_64.c \
+	string.c \
+	sync.c \
+	tape.c \
+	thread.c \
+	threadpool.c \
+	time.c \
+	version.c \
+	virtual.c \
+	wcstring.c \
+	init.c
+
+RC_SRCS = version.rc
+
+EXTRA_OBJS = relay32.o
+
+@MAKE_DLL_RULES@
+LDRPATH += -Wl,--script,ld.s
+
+relay32.o: $(WINEBUILD)
+	$(WINEBUILD) $(WINEBUILDFLAGS) -o $@ --relay32
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

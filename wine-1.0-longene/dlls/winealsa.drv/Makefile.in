@@ -1,0 +1,21 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = winealsa.drv
+IMPORTS   = dxguid uuid winmm user32 advapi32 kernel32
+EXTRALIBS = @ALSALIBS@
+
+C_SRCS = \
+	alsa.c \
+	dscapture.c \
+	dsoutput.c \
+	midi.c \
+	mixer.c \
+	waveinit.c \
+	wavein.c \
+	waveout.c
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

@@ -1,0 +1,17 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = clock.exe
+APPMODE   = -mwindows
+IMPORTS   = comdlg32 shell32 user32 gdi32 kernel32
+
+C_SRCS = \
+	main.c \
+	winclock.c
+
+RC_SRCS = rsrc.rc
+
+@MAKE_PROG_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

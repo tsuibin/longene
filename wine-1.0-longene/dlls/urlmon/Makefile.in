@@ -1,0 +1,31 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = urlmon.dll
+IMPORTLIB = urlmon
+IMPORTS   = uuid ole32 shlwapi wininet user32 advapi32 kernel32 ntdll
+
+C_SRCS = \
+	bindctx.c \
+	binding.c \
+	bindprot.c \
+	download.c \
+	file.c \
+	format.c \
+	ftp.c \
+	http.c \
+	internet.c \
+	mk.c \
+	regsvr.c \
+	sec_mgr.c \
+	session.c \
+	umon.c \
+	umstream.c \
+	urlmon_main.c
+
+RC_SRCS = rsrc.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

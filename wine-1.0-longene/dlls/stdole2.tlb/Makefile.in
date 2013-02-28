@@ -1,0 +1,13 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = stdole2.tlb
+IMPORTS   = kernel32
+
+RC_SRCS = rsrc.rc
+IDL_TLB_SRCS = std_ole_v2.idl
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

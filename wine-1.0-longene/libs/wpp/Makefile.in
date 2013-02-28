@@ -1,0 +1,27 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = libwpp.a
+
+C_SRCS = \
+	preproc.c \
+	wpp.c
+
+LEX_SRCS   = ppl.l
+BISON_SRCS = ppy.y
+
+all: $(MODULE)
+
+@MAKE_RULES@
+
+$(MODULE): $(OBJS)
+	$(RM) $@
+	$(AR) $(ARFLAGS) $@ $(OBJS)
+	$(RANLIB) $@
+
+ppy.tab.c: ppy.tab.h   # for parallel makes
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend
+
+ppl.yy.o: ppy.tab.h

@@ -1,0 +1,25 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = secur32.dll
+IMPORTLIB = secur32
+IMPORTS   = netapi32 advapi32 kernel32 ntdll
+DELAYIMPORTS = crypt32
+
+C_SRCS = \
+	base64_codec.c \
+	dispatcher.c \
+	hmac_md5.c \
+	lsa.c \
+	negotiate.c \
+	ntlm.c \
+	schannel.c \
+	secur32.c \
+	thunks.c \
+	util.c \
+	wrapper.c
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend

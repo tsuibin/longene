@@ -1,0 +1,39 @@
+TOPSRCDIR = @top_srcdir@
+TOPOBJDIR = ../..
+SRCDIR    = @srcdir@
+VPATH     = @srcdir@
+MODULE    = quartz.dll
+IMPORTLIB = quartz
+IMPORTS   = strmiids uuid dsound msacm32 msvfw32 ole32 oleaut32 shlwapi user32 gdi32 advapi32 kernel32
+
+C_SRCS = \
+	acmwrapper.c \
+	avidec.c \
+	avisplit.c \
+	control.c \
+	dsoundrender.c \
+	enumfilters.c \
+	enummedia.c \
+	enummoniker.c \
+	enumpins.c \
+	enumregfilters.c \
+	filesource.c \
+	filtergraph.c \
+	filtermapper.c \
+	main.c \
+	memallocator.c \
+	mpegsplit.c \
+	nullrenderer.c \
+	parser.c \
+	pin.c \
+	regsvr.c \
+	systemclock.c \
+	transform.c \
+	videorenderer.c \
+	waveparser.c
+
+RC_SRCS = version.rc
+
+@MAKE_DLL_RULES@
+
+@DEPENDENCIES@  # everything below this line is overwritten by make depend
